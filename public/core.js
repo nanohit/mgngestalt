@@ -165,16 +165,25 @@ export function initShared() {
 }
 export async function loadSite() {
   if (demo) return (await import("./demo.js")).demoSite;
-  // A minute-wide static URL avoids a long mutable-branch CDN cache.
-  const fresh = Math.floor(Date.now() / 60000);
-  const urls = [
-    `https://raw.githubusercontent.com/${config.repository}/${config.dataBranch}/data/site.json?v=${fresh}`,
-    `https://cdn.jsdelivr.net/gh/${config.repository}@${config.dataBranch}/data/site.json`,
-    `https://fastly.jsdelivr.net/gh/${config.repository}@${config.dataBranch}/data/site.json`,
+  // The GitHub API serves the branch with a 60-second cache, but allows
+  // 60 requests an hour per visitor IP. Static raw files ignore query
+  // strings and stay cached for up to 5 minutes; jsDelivr caches longer.
+  const path = `${config.repository}/${config.dataBranch}/data/site.json`;
+  const sources = [
+    [
+      `https://api.github.com/repos/${config.repository}/contents/data/site.json?ref=${config.dataBranch}`,
+      { headers: { Accept: "application/vnd.github.raw+json" } },
+    ],
+    [`https://raw.githubusercontent.com/${path}`],
+    [`https://cdn.jsdelivr.net/gh/${config.repository}@${config.dataBranch}/data/site.json`],
+    [`https://fastly.jsdelivr.net/gh/${config.repository}@${config.dataBranch}/data/site.json`],
   ];
-  for (const url of urls) {
+  for (const [url, options] of sources) {
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(4500) });
+      const res = await fetch(url, {
+        ...options,
+        signal: AbortSignal.timeout(4500),
+      });
       if (!res.ok) continue;
       const data = await res.json();
       if (!Array.isArray(data.therapists) || !Array.isArray(data.events))

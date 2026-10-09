@@ -327,10 +327,14 @@ function renderProfile(account) {
         status.textContent = result.publishError;
       } else {
         status.classList.add("success");
-        status.textContent = result.publication?.delayed
-          ? "Сохранено. Публикация обновится после обновления кэша."
-          : "Профиль сохранён. Обновление каталога может занять немного времени.";
-        toast("Профиль сохранён.");
+        status.textContent = account.profile?.published
+          ? "Профиль сохранён. В каталоге изменения появятся в течение минуты."
+          : "Сохранено как черновик — в каталоге анкеты нет. Чтобы опубликовать, отметьте «Показать профиль в каталоге».";
+        toast(
+          account.profile?.published
+            ? "Профиль сохранён."
+            : "Сохранено как черновик.",
+        );
       }
     });
   });
@@ -462,7 +466,7 @@ function renderEventEditor(event = {}) {
       });
       content = result.site;
       renderEvents();
-      toast("Событие опубликовано. Календарь обновится после обновления кэша.");
+      toast("Событие опубликовано. Календарь обновится в течение минуты.");
     });
   });
 }
@@ -500,7 +504,7 @@ function renderSettings() {
       ).site;
       toast("Изменения сохранены.");
       $(".form-status", e.target).textContent =
-        "Сохранено. Главная страница обновится после обновления кэша.";
+        "Сохранено. Главная страница обновится в течение минуты.";
     });
   });
 }
