@@ -35,12 +35,12 @@ export const initials = (name) =>
     .join("");
 export const formatLabel = (p) =>
   p.formats?.length === 2
-    ? "Лично и онлайн"
+    ? "Очно и онлайн"
     : p.formats?.includes("online")
       ? "Онлайн"
-      : "Лично";
+      : "Очно";
 export const priceLabel = (p) =>
-  p.price
+  p.price != null
     ? `от ${Number(p.price).toLocaleString("ru-RU")} ₽`
     : "Стоимость по запросу";
 export function portrait(p, className = "") {
@@ -64,7 +64,7 @@ export function installImageFallbacks(root = document) {
   );
 }
 export function empty(title, body, action = "") {
-  return `<div class="empty-state"><span class="empty-mark" aria-hidden="true">⌁</span><h3>${escape(title)}</h3><p>${escape(body)}</p>${action}</div>`;
+  return `<div class="empty-state"><h3>${escape(title)}</h3><p>${escape(body)}</p>${action}</div>`;
 }
 export function toast(message) {
   const el = $("#toast");
@@ -117,24 +117,6 @@ export function initShared() {
       );
       el.append(img);
     });
-    const art = $(".hero-art");
-    if (art) {
-      art.classList.add("logo-art");
-      art.innerHTML = "";
-      const img = document.createElement("img");
-      img.src = `https://cdn.jsdelivr.net/gh/${config.repository}@${config.assetRef}/public/assets/${config.logos[0]}`;
-      img.alt = "";
-      img.width = 900;
-      img.height = 900;
-      img.addEventListener(
-        "error",
-        () => {
-          img.src = `/assets/${config.logos[0]}`;
-        },
-        { once: true },
-      );
-      art.append(img);
-    }
   }
   if (config.logos[1] && $(".footer")) {
     const img = document.createElement("img");
@@ -213,5 +195,5 @@ export function therapistCard(p) {
     .map((t) => `<span class="tag">${escape(t)}</span>`)
     .join(
       "",
-    )}</div><div class="card-footer"><span>${escape(priceLabel(p))}${p.duration ? ` · ${escape(p.duration)} мин` : ""}</span><a class="text-link" href="${link}">Познакомиться ↗</a></div></div></article>`;
+    )}</div><div class="card-footer"><span>${escape(priceLabel(p))}${p.duration ? ` · ${escape(p.duration)} мин` : ""}</span><a class="text-link" href="${link}">Анкета и контакты</a></div></div></article>`;
 }

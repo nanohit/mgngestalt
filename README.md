@@ -25,6 +25,8 @@
 
 ## Подключение рабочих кабинетов
 
+В текущем проекте база Upstash и Production-переменные уже подключены. Данные администратора хранятся локально в игнорируемом Git файле `artifacts/admin-access.local`. Для быстрого запуска серверу передан существующий токен авторизованного `gh`; его права шире одного репозитория. При отдельной настройке используйте ограниченный токен, описанный ниже.
+
 1. Создайте **Free** Redis в [Upstash Console](https://console.upstash.com). Оставьте auto-upgrade отключённым. На момент запуска Free: 256 МБ, 500K команд/месяц, 10 ГБ трафика; проверьте [актуальный тариф](https://upstash.com/pricing/redis). Через Vercel Marketplace Free Redis может отсутствовать — не выбирайте платный план ради подключения.
 2. Создайте [fine-grained token GitHub](https://github.com/settings/personal-access-tokens/new): Resource owner `nanohit`, **Only select repositories → mgngestalt**, **Contents → Read and write**. Настройте срок действия и обновляйте токен до истечения. Не используйте персональный токен с доступом ко всем репозиториям.
 3. В [Production environment проекта Vercel](https://vercel.com/vfeb8c02646d6999bcd7afce8/mgngestalt/settings/environment-variables) добавьте как Secret:

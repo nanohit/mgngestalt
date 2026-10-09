@@ -118,7 +118,7 @@ function showAccount() {
     user.role === "admin" ? "Администратор сообщества" : "Личный кабинет";
   $("#account-title").textContent =
     user.role === "admin"
-      ? "Всё под рукой."
+      ? "Администрирование"
       : user.profile?.name || "Ваш кабинет";
   $("#first-password-notice").hidden = !user.mustChange;
   const tabs =
@@ -154,7 +154,7 @@ async function selectTab(tab) {
     b.classList.toggle("active", b.dataset.tab === tab),
   );
   $("#account-content").innerHTML =
-    '<p class="muted" role="status">Открываем раздел…</p>';
+    '<p class="muted" role="status">Загрузка…</p>';
   try {
     if (tab === "password") renderPassword();
     if (tab === "profile") renderProfile(user);
@@ -172,13 +172,13 @@ async function selectTab(tab) {
   } catch (e) {
     if (activeTab === tab)
       $("#account-content").innerHTML =
-        `<div class="error-message">${escape(e.message)} <button class="text-link" id="retry-tab">Повторить ↗</button></div>`;
+        `<div class="error-message">${escape(e.message)} <button class="text-link" id="retry-tab">Повторить</button></div>`;
     $("#retry-tab")?.addEventListener("click", () => selectTab(tab));
   }
 }
 function renderPassword() {
   $("#account-content").innerHTML =
-    `<section class="editor"><h2>${user.mustChange ? "Ваш новый пароль" : "Изменить пароль"}</h2><p class="intro">Используйте не меньше 12 символов. После смены пароля остальные сеансы завершатся.</p><form id="password-form"><label>Текущий пароль<input type="password" name="currentPassword" autocomplete="current-password" required maxlength="128"></label><label>Новый пароль<span class="password-field"><input type="password" id="new-password" name="newPassword" autocomplete="new-password" required minlength="12" maxlength="128"><button type="button" class="password-toggle" data-password="new-password" aria-label="Показать пароль">Показать</button></span></label><label>Повторите новый пароль<input type="password" name="repeat" autocomplete="new-password" required minlength="12" maxlength="128"></label><div class="save-row"><button class="button" type="submit">Сохранить пароль ↗</button><p class="form-status" role="status"></p></div></form></section>`;
+    `<section class="editor"><h2>${user.mustChange ? "Ваш новый пароль" : "Изменить пароль"}</h2><p class="intro">Используйте не меньше 12 символов. После смены пароля остальные сеансы завершатся.</p><form id="password-form"><label>Текущий пароль<input type="password" name="currentPassword" autocomplete="current-password" required maxlength="128"></label><label>Новый пароль<span class="password-field"><input type="password" id="new-password" name="newPassword" autocomplete="new-password" required minlength="12" maxlength="128"><button type="button" class="password-toggle" data-password="new-password" aria-label="Показать пароль">Показать</button></span></label><label>Повторите новый пароль<input type="password" name="repeat" autocomplete="new-password" required minlength="12" maxlength="128"></label><div class="save-row"><button class="button" type="submit">Сохранить пароль</button><p class="form-status" role="status"></p></div></form></section>`;
   bindPasswordToggles($("#account-content"));
   $("#password-form").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -202,7 +202,7 @@ function renderProfile(account) {
   pendingPhoto = null;
   removePhoto = false;
   $("#account-content").innerHTML =
-    `<section class="editor">${user.role === "admin" ? '<button class="text-link" id="back-accounts">← К участникам</button>' : ""}<h2>Профиль ${user.role === "admin" ? escape(p.name || account.login) : "для знакомства"}</h2><p class="intro">Расскажите о себе так, как вы рассказываете при первой встрече.</p><p class="disclosure">Опубликованные сведения и фото видны всем. Указывайте только информацию, которую готовы сделать общедоступной.</p><form id="profile-form"><div class="form-grid"><label class="span-2">Имя и фамилия<input name="name" value="${escape(p.name)}" required maxlength="100" autocomplete="name"></label><label class="span-2">Коротко о вашем подходе<textarea name="summary" required maxlength="240" rows="2">${escape(p.summary)}</textarea></label><div class="span-2"><span class="field-label">Фотография</span><img id="photo-preview" class="editor-photo" src="${escape(photoUrl(p.photo))}" alt="Предпросмотр фотографии" ${p.photo ? "" : "hidden"}><div class="photo-actions"><input id="photo-file" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Загрузить фотографию"><button class="text-link" type="button" id="remove-photo">Убрать фото</button></div><p class="hint" id="photo-status">JPG, PNG или WebP. Фотография автоматически уменьшится перед отправкой.</p></div><label class="span-2">О себе и работе<textarea name="about" maxlength="5000" rows="7">${escape(p.about)}</textarea></label><label class="span-2">Образование и подготовка<textarea name="education" maxlength="3000" rows="5">${escape(p.education)}</textarea></label><label>Стоимость встречи, ₽<input name="price" type="number" min="0" max="100000" step="1" value="${escape(p.price)}" placeholder="По запросу"></label><label>Продолжительность, минут<input name="duration" type="number" min="15" max="240" step="1" value="${escape(p.duration || 50)}" required></label></div><span class="field-label">Формат встреч</span><div class="check-row"><label><input type="checkbox" name="formats" value="inperson" ${p.formats?.includes("inperson") ? "checked" : ""}>Лично в Магнитогорске</label><label><input type="checkbox" name="formats" value="online" ${p.formats?.includes("online") ? "checked" : ""}>Онлайн</label></div><span class="field-label">С чем вы работаете</span><div class="check-row">${TOPICS.map((t) => `<label><input type="checkbox" name="topics" value="${escape(t)}" ${p.topics?.includes(t) ? "checked" : ""}>${escape(t)}</label>`).join("")}</div><h2>Как с вами связаться</h2><p class="intro">Например: Telegram — https://t.me/username, телефон — tel:+79001234567, почта — mailto:hello@example.ru.</p>${Array.from(
+    `<section class="editor">${user.role === "admin" ? '<button class="text-link" id="back-accounts">← К участникам</button>' : ""}<h2>Анкета ${user.role === "admin" ? escape(p.name || account.login) : "терапевта"}</h2><p class="intro">Заполните анкету и укажите контакты для записи.</p><p class="disclosure">Опубликованные сведения и фото видны всем. Указывайте только информацию, которую готовы сделать общедоступной.</p><form id="profile-form"><div class="form-grid"><label class="span-2">Имя и фамилия<input name="name" value="${escape(p.name)}" required maxlength="100" autocomplete="name"></label><label class="span-2">Краткое описание<textarea name="summary" required maxlength="240" rows="2">${escape(p.summary)}</textarea></label><div class="span-2"><span class="field-label">Фотография</span><img id="photo-preview" class="editor-photo" src="${escape(photoUrl(p.photo))}" alt="Предпросмотр фотографии" ${p.photo ? "" : "hidden"}><div class="photo-actions"><input id="photo-file" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Загрузить фотографию"><button class="text-link" type="button" id="remove-photo">Убрать фото</button></div><p class="hint" id="photo-status">JPG, PNG или WebP. Фотография автоматически уменьшится перед отправкой.</p></div><label class="span-2">О себе и работе<textarea name="about" maxlength="5000" rows="7">${escape(p.about)}</textarea></label><label class="span-2">Образование и подготовка<textarea name="education" maxlength="3000" rows="5">${escape(p.education)}</textarea></label><label>Стоимость встречи, ₽<input name="price" type="number" min="0" max="100000" step="1" value="${escape(p.price)}" placeholder="По запросу"></label><label>Продолжительность, минут<input name="duration" type="number" min="15" max="240" step="1" value="${escape(p.duration || 50)}" required></label></div><span class="field-label">Формат встреч</span><div class="check-row"><label><input type="checkbox" name="formats" value="inperson" ${p.formats?.includes("inperson") ? "checked" : ""}>Очно в Магнитогорске</label><label><input type="checkbox" name="formats" value="online" ${p.formats?.includes("online") ? "checked" : ""}>Онлайн</label></div><span class="field-label">С чем вы работаете</span><div class="check-row">${TOPICS.map((t) => `<label><input type="checkbox" name="topics" value="${escape(t)}" ${p.topics?.includes(t) ? "checked" : ""}>${escape(t)}</label>`).join("")}</div><h2>Как с вами связаться</h2><p class="intro">Например: Telegram — https://t.me/username, телефон — tel:+79001234567, почта — mailto:hello@example.ru.</p>${Array.from(
       { length: 4 },
       (_, i) => {
         const c = p.contacts?.[i] || {};
@@ -210,7 +210,7 @@ function renderProfile(account) {
       },
     ).join(
       "",
-    )}<div class="check-row"><label><input type="checkbox" name="published" ${p.published ? "checked" : ""}>Показать профиль в каталоге</label></div><p class="hint">Для публикации нужен хотя бы один контакт. Обновления могут появляться с небольшой задержкой.</p><div class="save-row"><button class="button" type="submit">Сохранить профиль ↗</button><p class="form-status" role="status" aria-live="polite"></p></div>${p.published ? `<p class="footer-note"><a class="inline-link" href="/therapist/${encodeURIComponent(account.id)}" target="_blank" rel="noopener">Посмотреть публичный профиль ↗</a></p>` : ""}</form></section>`;
+    )}<div class="check-row"><label><input type="checkbox" name="published" ${p.published ? "checked" : ""}>Показать профиль в каталоге</label></div><p class="hint">Для публикации нужен хотя бы один контакт. Обновления могут появляться с небольшой задержкой.</p><div class="save-row"><button class="button" type="submit">Сохранить профиль</button><p class="form-status" role="status" aria-live="polite"></p></div>${p.published ? `<p class="footer-note"><a class="inline-link" href="/therapist/${encodeURIComponent(account.id)}" target="_blank" rel="noopener">Посмотреть публичный профиль</a></p>` : ""}</form></section>`;
   $("#back-accounts")?.addEventListener("click", () => selectTab("accounts"));
   $("#remove-photo").addEventListener("click", () => {
     pendingPhoto = null;
@@ -325,7 +325,7 @@ function renderProfile(account) {
 }
 function renderAccounts() {
   $("#account-content").innerHTML =
-    `<section class="account-list"><div class="list-heading"><h2>Участники <span class="muted">${accounts.length}/30</span></h2><button class="button" id="create-account" ${accounts.length >= 30 ? "disabled" : ""}>Добавить участника ↗</button></div><p class="disclosure">Выдайте логин и временный пароль лично. При первом входе участник задаст свой пароль.</p>${accounts.length ? accounts.map((a) => `<article class="account-row"><div><h3>${escape(a.profile?.name || a.login)}</h3><p>${escape(a.login)} · ${a.profile?.published ? "В каталоге" : "Черновик"}${a.mustChange ? " · Временный пароль" : ""}</p></div><div class="row-actions"><button class="button secondary" data-edit="${escape(a.id)}">Профиль</button><button class="button secondary" data-reset="${escape(a.id)}">Сбросить пароль</button><button class="button secondary" data-delete="${escape(a.id)}">Удалить</button></div></article>`).join("") : '<p class="notice">Добавьте первого участника — его профиль появится после заполнения и публикации.</p>'}</section>`;
+    `<section class="account-list"><div class="list-heading"><h2>Участники <span class="muted">${accounts.length}/30</span></h2><button class="button" id="create-account" ${accounts.length >= 30 ? "disabled" : ""}>Добавить участника</button></div><p class="disclosure">Выдайте логин и временный пароль лично. При первом входе участник задаст свой пароль.</p>${accounts.length ? accounts.map((a) => `<article class="account-row"><div><h3>${escape(a.profile?.name || a.login)}</h3><p>${escape(a.login)} · ${a.profile?.published ? "В каталоге" : "Черновик"}${a.mustChange ? " · Временный пароль" : ""}</p></div><div class="row-actions"><button class="button secondary" data-edit="${escape(a.id)}">Профиль</button><button class="button secondary" data-reset="${escape(a.id)}">Сбросить пароль</button><button class="button secondary" data-delete="${escape(a.id)}">Удалить</button></div></article>`).join("") : '<p class="notice">Добавьте первого участника — его профиль появится после заполнения и публикации.</p>'}</section>`;
   $("#create-account").addEventListener("click", openCreate);
   $$("[data-edit]").forEach((b) =>
     b.addEventListener("click", () =>
@@ -355,7 +355,7 @@ function openDialog(html) {
 }
 function showCredentials(login, tempPassword) {
   $("#account-dialog-content").innerHTML =
-    `<h2>Кабинет готов.</h2><p>Передайте участнику эти данные лично. Временный пароль показывается сейчас; позже можно выдать новый.</p><div class="credentials"><p>Логин: <code>${escape(login)}</code></p><p>Пароль: <code>${escape(tempPassword)}</code></p><p>Страница входа: ${escape(location.origin)}/cabinet</p><button class="button secondary" id="copy-credentials">Скопировать данные</button></div>`;
+    `<h2>Кабинет создан</h2><p>Передайте участнику эти данные лично. Временный пароль показывается сейчас; позже можно выдать новый.</p><div class="credentials"><p>Логин: <code>${escape(login)}</code></p><p>Пароль: <code>${escape(tempPassword)}</code></p><p>Страница входа: ${escape(location.origin)}/cabinet</p><button class="button secondary" id="copy-credentials">Скопировать данные</button></div>`;
   $("#copy-credentials").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(
@@ -369,7 +369,7 @@ function showCredentials(login, tempPassword) {
 }
 function openCreate() {
   openDialog(
-    '<h2>Новый участник</h2><form id="create-form"><label>Имя и фамилия<input name="name" required maxlength="100"></label><label>Логин<input name="login" required pattern="[a-z0-9][a-z0-9._-]{2,39}" minlength="3" maxlength="40" autocapitalize="none" spellcheck="false"></label><p class="hint">Латинские буквы и цифры, не меньше 3 символов.</p><button class="button" type="submit">Создать кабинет ↗</button><p class="form-status" role="status"></p></form>',
+    '<h2>Новый участник</h2><form id="create-form"><label>Имя и фамилия<input name="name" required maxlength="100"></label><label>Логин<input name="login" required pattern="[a-z0-9][a-z0-9._-]{2,39}" minlength="3" maxlength="40" autocapitalize="none" spellcheck="false"></label><p class="hint">Латинские буквы и цифры, не меньше 3 символов.</p><button class="button" type="submit">Создать кабинет</button><p class="form-status" role="status"></p></form>',
   );
   $("#create-form").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -388,7 +388,7 @@ function openCreate() {
 function confirmAccount(account, action) {
   const deleting = action === "delete";
   openDialog(
-    `<h2>${deleting ? "Удалить участника?" : "Выдать новый пароль?"}</h2><p>${escape(account.profile?.name || account.login)} · ${escape(account.login)}</p><p>${deleting ? "Кабинет и профиль будут удалены из каталога." : "Прежний пароль перестанет работать, а текущие сеансы завершатся."}</p><form id="confirm-form"><button type="submit" class="button ${deleting ? "danger" : ""}">${deleting ? "Удалить кабинет" : "Сбросить пароль"} ↗</button><p class="form-status" role="status"></p></form>`,
+    `<h2>${deleting ? "Удалить участника?" : "Выдать новый пароль?"}</h2><p>${escape(account.profile?.name || account.login)} · ${escape(account.login)}</p><p>${deleting ? "Кабинет и профиль будут удалены из каталога." : "Прежний пароль перестанет работать, а текущие сеансы завершатся."}</p><form id="confirm-form"><button type="submit" class="button ${deleting ? "danger" : ""}">${deleting ? "Удалить кабинет" : "Сбросить пароль"}</button><p class="form-status" role="status"></p></form>`,
   );
   $("#confirm-form").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -414,7 +414,7 @@ function renderEvents() {
     (a, b) => new Date(b.startsAt) - new Date(a.startsAt),
   );
   $("#account-content").innerHTML =
-    `<section class="account-list"><div class="list-heading"><h2>События сообщества</h2><button class="button" id="new-event">Добавить событие ↗</button></div><p class="disclosure">Все даты и время — местные, по Магнитогорску (UTC+5).</p>${events.length ? events.map((e) => `<article class="account-row"><div><h3>${escape(e.title)}</h3><p>${eventDate(e.startsAt)} · ${eventTime(e.startsAt)} · ${escape(e.location)}</p></div><div class="row-actions"><button class="button secondary" data-event-edit="${escape(e.id)}">Изменить</button><button class="button secondary" data-event-delete="${escape(e.id)}">Удалить</button></div></article>`).join("") : '<p class="notice">Здесь появятся встречи, группы и события сообщества.</p>'}</section>`;
+    `<section class="account-list"><div class="list-heading"><h2>События сообщества</h2><button class="button" id="new-event">Добавить событие</button></div><p class="disclosure">Все даты и время — местные, по Магнитогорску (UTC+5).</p>${events.length ? events.map((e) => `<article class="account-row"><div><h3>${escape(e.title)}</h3><p>${eventDate(e.startsAt)} · ${eventTime(e.startsAt)} · ${escape(e.location)}</p></div><div class="row-actions"><button class="button secondary" data-event-edit="${escape(e.id)}">Изменить</button><button class="button secondary" data-event-delete="${escape(e.id)}">Удалить</button></div></article>`).join("") : '<p class="notice">Мероприятия пока не добавлены.</p>'}</section>`;
   $("#new-event").addEventListener("click", () => renderEventEditor());
   $$("[data-event-edit]").forEach((b) =>
     b.addEventListener("click", () =>
@@ -436,7 +436,7 @@ function localDateTime(iso) {
 }
 function renderEventEditor(event = {}) {
   $("#account-content").innerHTML =
-    `<section class="editor"><button class="text-link" id="back-events">← К календарю</button><h2>${event.id ? "Изменить событие" : "Новая встреча"}</h2><form id="event-form"><label>Название<input name="title" required maxlength="120" value="${escape(event.title)}"></label><div class="form-grid"><label>Тип события<input name="type" required maxlength="60" value="${escape(event.type || "Открытая встреча")}"></label><label>Дата и время в Магнитогорске<input name="startsAt" type="datetime-local" required value="${localDateTime(event.startsAt)}"></label><label class="span-2">Адрес или формат<input name="location" required maxlength="200" value="${escape(event.location)}" placeholder="Магнитогорск, адрес или онлайн"></label><label class="span-2">О встрече<textarea name="description" maxlength="5000" rows="7">${escape(event.description)}</textarea></label><label>Стоимость или условия<input name="price" maxlength="80" value="${escape(event.price)}" placeholder="Например, бесплатно"></label><label>Текст кнопки записи<input name="contactLabel" maxlength="60" value="${escape(event.contactLabel)}" placeholder="Записаться на встречу"></label><label class="span-2">Ссылка для записи<input name="contactUrl" maxlength="500" value="${escape(event.contactUrl)}" placeholder="https://t.me/…"></label></div><div class="save-row"><button class="button" type="submit">Опубликовать событие ↗</button><p class="form-status" role="status"></p></div></form></section>`;
+    `<section class="editor"><button class="text-link" id="back-events">← К календарю</button><h2>${event.id ? "Изменить событие" : "Добавить мероприятие"}</h2><form id="event-form"><label>Название<input name="title" required maxlength="120" value="${escape(event.title)}"></label><div class="form-grid"><label>Тип события<input name="type" required maxlength="60" value="${escape(event.type || "Открытая встреча")}"></label><label>Дата и время в Магнитогорске<input name="startsAt" type="datetime-local" required value="${localDateTime(event.startsAt)}"></label><label class="span-2">Адрес или формат<input name="location" required maxlength="200" value="${escape(event.location)}" placeholder="Магнитогорск, адрес или онлайн"></label><label class="span-2">О встрече<textarea name="description" maxlength="5000" rows="7">${escape(event.description)}</textarea></label><label>Стоимость или условия<input name="price" maxlength="80" value="${escape(event.price)}" placeholder="Например, бесплатно"></label><label>Текст кнопки записи<input name="contactLabel" maxlength="60" value="${escape(event.contactLabel)}" placeholder="Записаться на встречу"></label><label class="span-2">Ссылка для записи<input name="contactUrl" maxlength="500" value="${escape(event.contactUrl)}" placeholder="https://t.me/…"></label></div><div class="save-row"><button class="button" type="submit">Опубликовать событие</button><p class="form-status" role="status"></p></div></form></section>`;
   $("#back-events").addEventListener("click", renderEvents);
   $("#event-form").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -456,7 +456,7 @@ function renderEventEditor(event = {}) {
 }
 function deleteEvent(event) {
   openDialog(
-    `<h2>Удалить событие?</h2><p>${escape(event.title)}</p><form id="delete-event-form"><button class="button danger" type="submit">Удалить ↗</button><p class="form-status" role="status"></p></form>`,
+    `<h2>Удалить событие?</h2><p>${escape(event.title)}</p><form id="delete-event-form"><button class="button danger" type="submit">Удалить</button><p class="form-status" role="status"></p></form>`,
   );
   $("#delete-event-form").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -476,7 +476,7 @@ function deleteEvent(event) {
 function renderSettings() {
   const s = content.settings;
   $("#account-content").innerHTML =
-    `<section class="editor"><h2>О сообществе</h2><p class="intro">Этот текст и контакт видны на главной странице.</p><form id="settings-form"><label>Текст о нас<textarea name="about" required maxlength="3000" rows="7">${escape(s.about)}</textarea></label><label>Название контакта<input name="contactLabel" maxlength="60" value="${escape(s.contactLabel)}" placeholder="Связаться с сообществом"></label><label>Ссылка для связи<input name="contactUrl" maxlength="500" value="${escape(s.contactUrl)}" placeholder="https://t.me/…"></label><div class="save-row"><button class="button" type="submit">Сохранить ↗</button><p class="form-status" role="status"></p></div></form></section>`;
+    `<section class="editor"><h2>О сообществе</h2><p class="intro">Этот текст и контакт видны на главной странице.</p><form id="settings-form"><label>Текст о нас<textarea name="about" required maxlength="3000" rows="7">${escape(s.about)}</textarea></label><label>Название контакта<input name="contactLabel" maxlength="60" value="${escape(s.contactLabel)}" placeholder="Связаться с сообществом"></label><label>Ссылка для связи<input name="contactUrl" maxlength="500" value="${escape(s.contactUrl)}" placeholder="https://t.me/…"></label><div class="save-row"><button class="button" type="submit">Сохранить</button><p class="form-status" role="status"></p></div></form></section>`;
   $("#settings-form").addEventListener("submit", (e) => {
     e.preventDefault();
     submit(e.target, async () => {
@@ -499,7 +499,7 @@ try {
   const info = await status.json();
   if (!info.configured) {
     $("#login-status").textContent =
-      "Кабинеты скоро откроются. Администратор завершает подключение.";
+      "Вход временно недоступен. Обратитесь к администратору.";
     $("#login-form button[type=submit]").disabled = true;
   } else {
     const me = await fetch("/api/account", {

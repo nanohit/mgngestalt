@@ -50,18 +50,18 @@ function renderTherapists() {
   );
   $("#results-label").textContent = all.length
     ? `Специалистов: ${people.length}${people.length !== all.length ? ` из ${all.length}` : ""}`
-    : "Знакомство начинается здесь";
+    : "Опубликованных анкет пока нет";
   $("#therapist-grid").innerHTML = people.length
     ? people.map(therapistCard).join("")
     : all.length
       ? empty(
-          "Попробуем другой запрос?",
-          "Никого не нашли с этими фильтрами. Измените тему, формат или имя.",
-          '<button class="button secondary" id="reset-search">Сбросить фильтры ↗</button>',
+          "Специалисты не найдены",
+          "Измените поисковый запрос или сбросьте фильтры.",
+          '<button class="button secondary" id="reset-search">Сбросить фильтры</button>',
         )
       : empty(
-          "Скоро познакомимся",
-          "Сообщество готовит первые профили. Здесь появятся специалисты, их подход и контакты для записи.",
+          "Анкеты пока не опубликованы",
+          "Администратор добавит специалистов после заполнения анкет.",
         );
   $("#reset-search")?.addEventListener("click", () => {
     $("#filters").reset();
@@ -120,12 +120,12 @@ function renderCalendar() {
     ? shown
         .map(
           (e) =>
-            `<button type="button" class="event-row" data-event="${escape(e.id)}"><span class="event-date">${Number(dateParts(e.startsAt).day)}<small>${escape(new Date(e.startsAt).toLocaleDateString("ru-RU", { month: "short", timeZone: "Asia/Yekaterinburg" }))}</small></span><span class="event-info"><span>${escape(e.type)}</span><h3>${escape(e.title)}</h3><p>${eventTime(e.startsAt)} · ${escape(e.location)}${e.price ? ` · ${escape(e.price)}` : ""}</p></span><span aria-hidden="true">↗</span></button>`,
+            `<button type="button" class="event-row" data-event="${escape(e.id)}"><span class="event-date">${Number(dateParts(e.startsAt).day)}<small>${escape(new Date(e.startsAt).toLocaleDateString("ru-RU", { month: "short", timeZone: "Asia/Yekaterinburg" }))}</small></span><span class="event-info"><span>${escape(e.type)}</span><h3>${escape(e.title)}</h3><p>${eventTime(e.startsAt)} · ${escape(e.location)}${e.price ? ` · ${escape(e.price)}` : ""}</p></span></button>`,
         )
         .join("")
     : empty(
-        "Место для будущих встреч",
-        "На этот месяц пока нет объявленных событий. Возвращайтесь — календарь будет пополняться.",
+        "Мероприятий в этом месяце нет",
+        "Выберите другой месяц.",
       );
   $$("[data-event]").forEach((b) =>
     b.addEventListener("click", () =>
@@ -136,7 +136,7 @@ function renderCalendar() {
 function openEvent(e) {
   const contact = safeUrl(e.contactUrl);
   $("#event-detail").innerHTML =
-    `<p class="eyebrow">${escape(e.type)}</p><h2>${escape(e.title)}</h2><div class="tags"><span class="tag">${eventDate(e.startsAt)}</span><span class="tag">${eventTime(e.startsAt)} · время Магнитогорска</span><span class="tag">${escape(e.location)}</span>${e.price ? `<span class="tag">${escape(e.price)}</span>` : ""}</div><p class="detail-text">${escape(e.description)}</p>${contact ? `<a class="button" href="${escape(contact)}" target="_blank" rel="noopener noreferrer">${escape(e.contactLabel || "Узнать о встрече")} ↗</a>` : '<p class="muted">Контакты для записи появятся в описании встречи.</p>'}`;
+    `<p class="eyebrow">${escape(e.type)}</p><h2>${escape(e.title)}</h2><div class="tags"><span class="tag">${eventDate(e.startsAt)}</span><span class="tag">${eventTime(e.startsAt)} · время Магнитогорска</span><span class="tag">${escape(e.location)}</span>${e.price ? `<span class="tag">${escape(e.price)}</span>` : ""}</div><p class="detail-text">${escape(e.description)}</p>${contact ? `<a class="button" href="${escape(contact)}" target="_blank" rel="noopener noreferrer">${escape(e.contactLabel || "Контакты организатора")}</a>` : '<p class="muted">Контакт для записи не указан.</p>'}`;
   $("#event-dialog").showModal();
 }
 try {
@@ -146,8 +146,9 @@ try {
   if (contact) {
     $("#community-contact").href = contact;
     $("#community-contact").textContent =
-      (site.settings.contactLabel || "Связаться с сообществом") + " ↗";
+      site.settings.contactLabel || "Связаться с сообществом";
     $("#community-contact").hidden = false;
+    $("#community-contact-section").hidden = false;
     $("#community-contact").target = "_blank";
     $("#community-contact").rel = "noopener noreferrer";
   }

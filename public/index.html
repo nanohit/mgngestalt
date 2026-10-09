@@ -1,249 +1,61 @@
 <!doctype html>
 <html lang="ru">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f6f4ef" />
-    <title>Магнитогорское гештальт-сообщество — быть в контакте</title>
-    <meta
-      name="description"
-      content="Гештальт-сообщество Магнитогорска. Знакомьтесь с терапевтами, выбирайте специалиста и узнавайте о встречах и событиях."
-    />
-    <meta property="og:title" content="Магнитогорское гештальт-сообщество" />
-    <meta
-      property="og:description"
-      content="Быть собой. Быть в контакте. Терапевты и встречи в Магнитогорске."
-    />
-    <meta property="og:type" content="website" />
-    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/style.css" />
-    <script type="module" src="/public.js"></script>
-  </head>
-  <body>
-    <a class="skip" href="#main">Перейти к содержимому</a>
-    <header class="header wrap">
-      <a class="brand" href="/" aria-label="Главная"
-        ><span class="brand-symbol" data-logo></span
-        ><span
-          >магнитогорское<br /><strong>гештальт-сообщество</strong></span
-        ></a
-      >
-      <nav aria-label="Основная навигация">
-        <a href="#about">О нас</a><a href="#therapists">Терапевты</a
-        ><a href="#events">События</a>
-      </nav>
-      <a class="header-login" href="/cabinet"
-        >Кабинет <span aria-hidden="true">↗</span></a
-      >
-    </header>
-    <main id="main">
-      <section class="hero wrap">
-        <div class="hero-copy">
-          <p class="eyebrow">
-            <span class="status-dot"></span> Магнитогорск · сообщество рядом
-          </p>
-          <h1>Быть собой.<br /><em>Быть в контакте.</em></h1>
-          <p class="hero-description">
-            Пространство, где можно встретить другого<br
-              class="desktop-break"
-            />
-            и чуть лучше услышать себя.
-          </p>
-          <div class="hero-actions">
-            <a class="button" href="#therapists"
-              >Найти терапевта <span aria-hidden="true">↗</span></a
-            ><a class="text-link" href="#events"
-              >Ближайшие встречи <span aria-hidden="true">→</span></a
-            >
-          </div>
-          <p class="hero-note">Лично в Магнитогорске и онлайн</p>
-        </div>
-        <div class="hero-art" aria-hidden="true">
-          <div class="art-caption">ПРОСТРАНСТВО ВСТРЕЧИ</div>
-          <div class="orbit orbit-one"></div>
-          <div class="orbit orbit-two"></div>
-          <div class="orbit orbit-three"></div>
-          <span class="art-center">здесь<br /><i>можно быть</i></span
-          ><span class="art-dot"></span>
-          <div class="art-foot">разные люди — живой контакт</div>
-        </div>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#456357">
+  <title>Магнитогорское гештальт-сообщество</title>
+  <meta name="description" content="Гештальт-терапевты Магнитогорска: информация о специалистах, контакты для записи и календарь мероприятий сообщества.">
+  <meta property="og:title" content="Магнитогорское гештальт-сообщество"><meta property="og:description" content="Каталог терапевтов и календарь мероприятий в Магнитогорске."><meta property="og:type" content="website">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/style.css">
+  <script type="module" src="/public.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Перейти к содержимому</a>
+<div class="site-page">
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Главная"><span class="brand-symbol" data-logo></span><span class="brand-text">Магнитогорское<br><strong>гештальт-сообщество</strong><span class="brand-subtitle">Терапевты и мероприятия</span></span></a>
+    <a class="header-login" href="/cabinet">Вход для участников</a>
+  </header>
+  <nav class="main-nav" aria-label="Основная навигация"><a href="#about">О сообществе</a><a href="#therapists">Терапевты</a><a href="#events">Мероприятия</a><a href="/cabinet">Личный кабинет</a></nav>
+  <main id="main" class="home-layout">
+    <div class="main-column">
+      <section id="about" class="content-section">
+        <h1>О сообществе</h1>
+        <p id="about-copy">Магнитогорское гештальт-сообщество объединяет специалистов, работающих в гештальт-подходе. На сайте размещены анкеты терапевтов, контакты для записи и календарь мероприятий.</p>
+        <p>Консультации проходят очно в Магнитогорске и онлайн. Условия работы и время приёма уточняйте у выбранного специалиста.</p>
       </section>
-      <section class="about-section" id="about">
-        <div class="wrap about-layout">
-          <div>
-            <p class="eyebrow">01 / О сообществе</p>
-            <h2>Рядом с собой.<br />Рядом с другими.</h2>
-          </div>
-          <div class="about-copy">
-            <p id="about-copy">
-              Мы объединяем гештальт-терапевтов Магнитогорска и людей, которым
-              близки внимание к себе, живой диалог и поддержка. Здесь можно
-              познакомиться со специалистами, найти своего терапевта и узнать о
-              встречах сообщества.
-            </p>
-            <div class="values">
-              <div>
-                <span>↗</span>
-                <h3>Диалог</h3>
-                <p>Можно говорить о том,<br />что для вас важно.</p>
-              </div>
-              <div>
-                <span>◎</span>
-                <h3>Внимание</h3>
-                <p>К чувствам, границам<br />и собственному темпу.</p>
-              </div>
-              <div>
-                <span>⌁</span>
-                <h3>Связь</h3>
-                <p>С собой, с другим<br />и с жизнью вокруг.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      <section class="section wrap" id="therapists">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">02 / Терапевты</p>
-            <h2>С кого начнётся<br /><em>ваша встреча?</em></h2>
-          </div>
-          <p class="section-description">
-            Познакомьтесь со специалистами.<br />Выбирайте того, с кем вам
-            откликается.
-          </p>
-        </div>
-        <form class="filters" id="filters" role="search">
-          <label class="search-field"
-            ><span aria-hidden="true">⌕</span
-            ><input
-              type="search"
-              id="search"
-              aria-label="Поиск по имени или запросу"
-              placeholder="Имя или то, что вас волнует…"
-              autocomplete="off" /></label
-          ><label class="sr-only" for="format">Формат консультаций</label
-          ><select id="format">
-            <option value="">Любой формат</option>
-            <option value="inperson">Лично</option>
-            <option value="online">Онлайн</option></select
-          ><label class="sr-only" for="topic">Тема работы</label
-          ><select id="topic">
-            <option value="">Любая тема</option>
-            <option>Отношения</option>
-            <option>Тревога</option>
-            <option>Самооценка</option>
-            <option>Кризисы</option>
-            <option>Утрата</option>
-            <option>Семья</option>
-            <option>Выгорание</option>
-            <option>Самопознание</option>
-          </select>
+      <section id="therapists" class="content-section catalog-section">
+        <h2>Терапевты</h2>
+        <p class="section-description">Поиск по имени, теме обращения и формату консультаций.</p>
+        <form id="filters" class="filters" role="search">
+          <label class="search-field">Имя или тема<input type="search" id="search" aria-label="Поиск по имени или запросу" placeholder="Введите имя или запрос" autocomplete="off"></label>
+          <label>Формат<select id="format"><option value="">Любой</option><option value="inperson">Очно</option><option value="online">Онлайн</option></select></label>
+          <label>Тема<select id="topic"><option value="">Любая</option><option>Отношения</option><option>Тревога</option><option>Самооценка</option><option>Кризисы</option><option>Утрата</option><option>Семья</option><option>Выгорание</option><option>Самопознание</option></select></label>
         </form>
-        <p
-          class="results-label"
-          id="results-label"
-          role="status"
-          aria-live="polite"
-        >
-          Знакомимся со специалистами…
-        </p>
-        <div class="therapist-grid" id="therapist-grid"></div>
-        <div class="quiet-note">
-          <span aria-hidden="true">✳</span>
-          <p>
-            Первый шаг — просто знакомство. Об условиях работы и записи<br
-              class="desktop-break"
-            />
-            можно спросить у выбранного терапевта напрямую.
-          </p>
-        </div>
+        <p id="results-label" class="results-label" role="status" aria-live="polite">Загрузка каталога…</p>
+        <div id="therapist-grid" class="therapist-grid"></div>
       </section>
-      <section class="events-section" id="events">
-        <div class="wrap">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">03 / Календарь сообщества</p>
-              <h2>Встречаться.<br /><em>Делиться. Расти.</em></h2>
-            </div>
-            <p class="section-description">
-              Открытые встречи, группы<br />и события для коллег.
-            </p>
-          </div>
-          <div class="calendar-layout">
-            <div class="calendar">
-              <div class="calendar-header">
-                <h3 id="calendar-month"></h3>
-                <div>
-                  <button
-                    class="icon-button"
-                    id="month-prev"
-                    aria-label="Предыдущий месяц"
-                  >
-                    ←</button
-                  ><button
-                    class="icon-button"
-                    id="month-next"
-                    aria-label="Следующий месяц"
-                  >
-                    →
-                  </button>
-                </div>
-              </div>
-              <div class="weekdays" aria-hidden="true">
-                <span>пн</span><span>вт</span><span>ср</span><span>чт</span
-                ><span>пт</span><span>сб</span><span>вс</span>
-              </div>
-              <div
-                class="calendar-days"
-                id="calendar-days"
-                aria-label="Дни месяца"
-              ></div>
-              <div class="calendar-legend">
-                <span class="status-dot"></span> День, когда мы встречаемся
-                <button class="text-link small" id="clear-day" hidden>
-                  Весь месяц
-                </button>
-              </div>
-            </div>
-            <div class="event-list" id="event-list" aria-live="polite"></div>
-          </div>
+    </div>
+    <aside class="sidebar" aria-label="Мероприятия и информация">
+      <section id="events" class="sidebar-section">
+        <h2>Календарь мероприятий</h2>
+        <div class="calendar">
+          <div class="calendar-header"><button class="icon-button" id="month-prev" aria-label="Предыдущий месяц">‹</button><h3 id="calendar-month"></h3><button class="icon-button" id="month-next" aria-label="Следующий месяц">›</button></div>
+          <div class="weekdays" aria-hidden="true"><span>пн</span><span>вт</span><span>ср</span><span>чт</span><span>пт</span><span>сб</span><span>вс</span></div>
+          <div class="calendar-days" id="calendar-days" aria-label="Дни месяца"></div>
+          <div class="calendar-legend"><span class="event-indicator"></span> Дата мероприятия<button class="text-link small" id="clear-day" hidden>Все даты</button></div>
         </div>
+        <p class="local-time">Время Магнитогорска (UTC+5)</p>
+        <div class="event-list" id="event-list" aria-live="polite"></div>
       </section>
-      <section class="invite wrap">
-        <div class="invite-mark" aria-hidden="true">↗</div>
-        <div>
-          <p class="eyebrow">Начать можно с малого</p>
-          <h2>С одного разговора.</h2>
-          <p>Найдите человека, с которым захотите поговорить.</p>
-        </div>
-        <a class="button" href="#therapists"
-          >Познакомиться с терапевтами <span aria-hidden="true">↗</span></a
-        >
-      </section>
-    </main>
-    <footer class="footer wrap">
-      <a class="brand" href="/"
-        ><span class="brand-symbol" data-logo></span
-        ><span
-          >магнитогорское<br /><strong>гештальт-сообщество</strong></span
-        ></a
-      >
-      <p>
-        Магнитогорск · <span id="footer-year">2026</span><br /><span
-          class="muted"
-          >В своём темпе. В живом контакте.</span
-        >
-      </p>
-      <div>
-        <a id="community-contact" class="text-link" hidden
-          >Связаться с сообществом ↗</a
-        ><a href="/cabinet" class="footer-cabinet">Вход для участников ↗</a>
-      </div>
-    </footer>
-    <dialog id="event-dialog" class="modal">
-      <button class="modal-close icon-button" aria-label="Закрыть">×</button>
-      <div id="event-detail"></div>
-    </dialog>
-    <div id="toast" class="toast" role="status" hidden></div>
-  </body>
+      <section class="sidebar-section"><h2>Запись на консультацию</h2><p>Откройте анкету терапевта и воспользуйтесь указанным телефоном, почтой или ссылкой на мессенджер.</p><p>Запись и консультации проводит сам специалист.</p></section>
+      <section class="sidebar-section"><h2>Участникам сообщества</h2><p>Для редактирования анкеты войдите в личный кабинет. Логин и первый пароль выдаёт администратор.</p><a href="/cabinet">Войти в кабинет</a></section>
+      <section class="sidebar-section" id="community-contact-section" hidden><h2>Контакты сообщества</h2><a id="community-contact" hidden>Связаться с администратором</a></section>
+    </aside>
+  </main>
+  <footer class="footer"><div><p>Магнитогорское гештальт-сообщество<br>Магнитогорск · <span id="footer-year">2026</span></p><a href="/cabinet">Вход для участников</a></div></footer>
+</div>
+<dialog id="event-dialog" class="modal"><button class="modal-close icon-button" aria-label="Закрыть">×</button><div id="event-detail"></div></dialog>
+<div id="toast" class="toast" role="status" hidden></div>
+</body>
 </html>

@@ -108,7 +108,7 @@ export default async function handler(req, res) {
       return send(200, { configured: configured() });
     requireValue(
       configured(),
-      "Кабинеты скоро откроются. Администратор завершает подключение.",
+      "Вход временно недоступен. Обратитесь к администратору.",
       503,
     );
     if (req.method === "GET") {
