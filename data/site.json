@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-09T22:59:33.497Z",
+  "updatedAt": "2026-10-09T23:10:47.452Z",
   "settings": {
     "about": "Магнитогорское гештальт-сообщество объединяет специалистов, работающих в гештальт-подходе.",
     "contactLabel": "",
@@ -99,5 +99,17 @@
       "published": true
     }
   ],
-  "events": []
+  "events": [
+    {
+      "title": "Первый международный психоаналитический конгресс",
+      "type": "Открытая встреча",
+      "startsAt": "2026-10-13T09:00:00.000Z",
+      "location": "Зальцбург, Австро-Венгрия",
+      "description": "Международная встреча последователей психоанализа.",
+      "price": "",
+      "contactLabel": "",
+      "contactUrl": "https://www.freudfile.org/psychoanalysis/first_congress.html",
+      "id": "a29e5cbd-1465-4b64-a19b-1d4a3ccddc36"
+    }
+  ]
 }
