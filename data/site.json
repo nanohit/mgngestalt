@@ -1,11 +1,36 @@
 {
   "version": 1,
-  "updatedAt": "2026-10-09T20:17:43.630Z",
+  "updatedAt": "2026-10-09T20:17:51.566Z",
   "settings": {
     "about": "Магнитогорское гештальт-сообщество объединяет специалистов, работающих в гештальт-подходе. На сайте размещены анкеты терапевтов, контакты для записи и календарь мероприятий.",
     "contactLabel": "",
     "contactUrl": ""
   },
-  "therapists": [],
+  "therapists": [
+    {
+      "id": "0d737ac0-d3b7-4eeb-a28f-562d0f1ca4b0",
+      "name": "Проверка кабинета (тест)",
+      "summary": "Временная анкета для проверки публикации.",
+      "about": "Тестовая запись. Будет удалена после проверки.",
+      "education": "Проверка раздела образования",
+      "formats": [
+        "inperson",
+        "online"
+      ],
+      "topics": [
+        "Тревога"
+      ],
+      "price": null,
+      "duration": 50,
+      "contacts": [
+        {
+          "label": "Сайт сообщества",
+          "url": "https://mgngestalt.vercel.app/"
+        }
+      ],
+      "photo": "uploads/d7adc661-73a1-408b-908e-0105cc0e8c57.webp",
+      "published": true
+    }
+  ],
   "events": []
 }
