@@ -1,5 +1,5 @@
 /* Магнитогорское гештальт-сообщество — версия /1
-   Тёплая бумага, разделы в блоках, тонкая линия-завитушка на фоне.
+   Тёплая бумага, разделы в блоках, акварельные мазки на фоне (backdrop.js).
    Один мягкий шрифт с засечками для всего сайта; шрифты системные. */
 
 :root {
@@ -56,17 +56,35 @@ html {
 }
 
 body {
+  position: relative;
+  z-index: 0;
   margin: 0;
   min-height: 100vh;
   font-size: 1rem;
   line-height: 1.6;
   font-variant-numeric: lining-nums;
   background:
-    url("/assets/squiggle.svg") center 0 / 2400px auto no-repeat,
     radial-gradient(44rem 22rem at 96% -5rem, rgb(251 226 190 / 50%), transparent 70%),
     radial-gradient(36rem 20rem at -6% -4rem, rgb(214 233 224 / 60%), transparent 70%),
     var(--paper);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Холст с мазками лежит под блоками и не двигается при прокрутке. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100vh;
+  height: 100lvh;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+.backdrop.ready {
+  opacity: 1;
 }
 
 ::selection {
@@ -973,7 +991,11 @@ input[type="search"]::-webkit-search-cancel-button {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.25rem 1.5rem;
-  padding: 2rem 0.5rem 2.5rem;
+  margin: var(--gap) 0 1.5rem;
+  padding: 1rem 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
   font-size: 0.875rem;
   color: var(--muted);
 }
@@ -1663,10 +1685,6 @@ input[type="file"]::file-selector-button {
     padding: 1rem 1.25rem 0;
   }
 
-  body {
-    background-size: 1700px auto, auto, auto, auto;
-  }
-
   .home-layout {
     grid-template-columns: 1fr;
   }
@@ -1692,10 +1710,6 @@ input[type="file"]::file-selector-button {
 
   .site-page {
     padding: 0.75rem 0.75rem 0;
-  }
-
-  body {
-    background-size: 1300px auto, auto, auto, auto;
   }
 
   .block,
@@ -1836,7 +1850,9 @@ input[type="file"]::file-selector-button {
   }
 
   .footer {
-    padding: 1.5rem 0.5rem 2rem;
+    margin-bottom: 0.75rem;
+    padding: 0.875rem 1.25rem;
+    border-radius: 18px;
   }
 
   .profile-layout {
