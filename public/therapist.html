@@ -9,7 +9,8 @@
       name="description"
       content="Профиль гештальт-терапевта: о себе, подход, образование и контакты для записи."
     />
-    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/assets/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
     <link rel="stylesheet" href="/style.css" />
     <script type="module" src="/profile.js"></script>
   </head>
@@ -17,10 +18,10 @@
     <a class="skip" href="#main">Перейти к содержимому</a>
     <div class="site-page">
     <header class="site-header">
-      <a class="brand" href="/"><span class="brand-symbol" data-logo></span><span class="brand-text">Магнитогорское<br /><strong>гештальт-сообщество</strong><span class="brand-subtitle">Терапевты и мероприятия</span></span></a>
+      <a class="brand" href="/"><span class="brand-symbol" data-logo></span><span class="sr-only">Магнитогорское гештальт-сообщество</span></a>
+      <nav class="main-nav" aria-label="Основная навигация"><a href="/#about">О сообществе</a><a href="/#therapists">Терапевты</a><a href="/#events">Мероприятия</a></nav>
       <a class="header-login" href="/">На главную</a>
     </header>
-    <nav class="main-nav" aria-label="Основная навигация"><a href="/#about">О сообществе</a><a href="/#therapists">Терапевты</a><a href="/#events">Мероприятия</a><a href="/cabinet">Личный кабинет</a></nav>
     <main id="main" class="page-content profile-main">
       <p id="profile-status" role="status">Загрузка анкеты…</p>
       <div id="profile"></div>
