@@ -1,0 +1,9 @@
+.vercel/
+.env*
+!.env.example
+node_modules/
+dist/
+.DS_Store
+*.local
+artifacts/
+.vercel
