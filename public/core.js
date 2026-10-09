@@ -2,6 +2,8 @@ import { config } from "./config.js";
 export const $ = (s, root = document) => root.querySelector(s);
 export const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 export const demo = new URLSearchParams(location.search).get("demo") === "1";
+// Preview of the next design lives under /1; keep visitors inside it.
+export const base = /^\/1(\/|$)/.test(location.pathname) ? "/1" : "";
 export const escape = (value) =>
   String(value ?? "").replace(
     /[&<>"']/g,
@@ -118,7 +120,8 @@ export function initShared() {
       el.append(img);
     });
   }
-  if (config.logos[1] && $(".footer")) {
+  const partnerSlot = $("[data-partner-logo]") || $(".footer");
+  if (config.logos[1] && partnerSlot) {
     const img = document.createElement("img");
     img.className = "institutes-logo";
     img.loading = "lazy";
@@ -131,7 +134,7 @@ export function initShared() {
       },
       { once: true },
     );
-    $(".footer").append(img);
+    partnerSlot.append(img);
   }
   if (demo) {
     const el = document.createElement("div");
@@ -189,7 +192,7 @@ export async function loadSite() {
   return data;
 }
 export function therapistCard(p) {
-  const link = `/therapist/${encodeURIComponent(p.id)}${demo ? "?demo=1" : ""}`;
+  const link = `${base}/therapist/${encodeURIComponent(p.id)}${demo ? "?demo=1" : ""}`;
   return `<article class="therapist-card"><a href="${link}" aria-label="Профиль: ${escape(p.name)}">${portrait(p)}</a><div class="card-body"><p class="card-kicker"><span>Гештальт-терапевт</span><span>${escape(formatLabel(p))}</span></p><h3 class="card-name"><a href="${link}">${escape(p.name)}</a></h3><p class="card-description">${escape(p.summary)}</p><div class="tags">${(
     p.topics || []
   )

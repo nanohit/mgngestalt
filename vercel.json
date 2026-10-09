@@ -10,6 +10,22 @@
   },
   "rewrites": [
     {
+      "source": "/1",
+      "destination": "/1/index.html"
+    },
+    {
+      "source": "/1/",
+      "destination": "/1/index.html"
+    },
+    {
+      "source": "/1/cabinet",
+      "destination": "/1/cabinet.html"
+    },
+    {
+      "source": "/1/therapist/:id",
+      "destination": "/1/therapist.html"
+    },
+    {
       "source": "/cabinet",
       "destination": "/cabinet.html"
     },

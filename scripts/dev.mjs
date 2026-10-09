@@ -34,9 +34,12 @@ http
         return handler(req, res);
       }
       let path = url.pathname;
-      if (path === "/") path = "/index.html";
-      if (path === "/cabinet") path = "/cabinet.html";
-      if (path.startsWith("/therapist/")) path = "/therapist.html";
+      // Same rewrites as vercel.json, including the /1 design preview.
+      const preview = /^\/1(\/|$)/.test(path) ? "/1" : "";
+      const page = path.slice(preview.length) || "/";
+      if (page === "/") path = preview + "/index.html";
+      if (page === "/cabinet") path = preview + "/cabinet.html";
+      if (page.startsWith("/therapist/")) path = preview + "/therapist.html";
       const file = resolve(root, "." + decodeURIComponent(path));
       if (!file.startsWith(root + sep)) throw new Error("Forbidden");
       await stat(file);

@@ -7,6 +7,7 @@ import {
   photoUrl,
   eventDate,
   eventTime,
+  base,
 } from "./core.js";
 initShared();
 let user = null,
@@ -210,7 +211,7 @@ function renderProfile(account) {
       },
     ).join(
       "",
-    )}<div class="check-row"><label><input type="checkbox" name="published" ${p.published ? "checked" : ""}>Показать профиль в каталоге</label></div><p class="hint">Для публикации нужен хотя бы один контакт. Обновления могут появляться с небольшой задержкой.</p><div class="save-row"><button class="button" type="submit">Сохранить профиль</button><p class="form-status" role="status" aria-live="polite"></p></div>${p.published ? `<p class="footer-note"><a class="inline-link" href="/therapist/${encodeURIComponent(account.id)}" target="_blank" rel="noopener">Посмотреть публичный профиль</a></p>` : ""}</form></section>`;
+    )}<div class="check-row"><label><input type="checkbox" name="published" ${p.published ? "checked" : ""}>Показать профиль в каталоге</label></div><p class="hint">Для публикации нужен хотя бы один контакт. Обновления могут появляться с небольшой задержкой.</p><div class="save-row"><button class="button" type="submit">Сохранить профиль</button><p class="form-status" role="status" aria-live="polite"></p></div>${p.published ? `<p class="footer-note"><a class="inline-link" href="${base}/therapist/${encodeURIComponent(account.id)}" target="_blank" rel="noopener">Посмотреть публичный профиль</a></p>` : ""}</form></section>`;
   $("#back-accounts")?.addEventListener("click", () => selectTab("accounts"));
   $("#remove-photo").addEventListener("click", () => {
     pendingPhoto = null;
