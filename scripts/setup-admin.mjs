@@ -1,47 +1,25 @@
 import { randomBytes } from "node:crypto";
-import { writeFile, mkdir, readFile } from "node:fs/promises";
-import { execFileSync, spawnSync } from "node:child_process";
+import { writeFile, mkdir, chmod } from "node:fs/promises";
 import { hashPassword } from "../lib/auth.js";
-const scope = "vfeb8c02646d6999bcd7afce8";
-const link = JSON.parse(await readFile(".vercel/project.json", "utf8"));
-if (
-  link.projectId !== "prj_cQCdMO4meqMbtw5l3208lOajmMe1" ||
-  link.orgId !== "team_e1gOZOYYchnp8lmUT2WDT3vz"
-) {
-  console.error("Link this checkout to the intended mgngestalt project first.");
-  process.exit(1);
-}
-// Inspect exactly this project's link. Never read or print authentication tokens.
-execFileSync("vercel", ["project", "inspect", "mgngestalt", "--scope", scope], {
-  stdio: "inherit",
+const project = "uwcvheonmfsibqtcfosw";
+const token = process.env.SUPABASE_ACCESS_TOKEN;
+if (!token) throw new Error("Set SUPABASE_ACCESS_TOKEN in your terminal environment first.");
+const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+const endpoint = `https://api.supabase.com/v1/projects/${project}`;
+const check = await fetch(`${endpoint}/database/query`, {
+  method: "POST", headers,
+  body: JSON.stringify({ query: "select key from public.mgg_kv where key = 'user:admin'" }),
 });
-const temporary = randomBytes(18).toString("base64url"),
-  hash = await hashPassword(temporary);
-const result = spawnSync(
-  "vercel",
-  [
-    "env",
-    "add",
-    "ADMIN_PASSWORD_HASH",
-    "production",
-    "--sensitive",
-    "--scope",
-    scope,
-  ],
-  { input: hash, encoding: "utf8" },
-);
-if (result.status !== 0) {
-  console.error(
-    "Could not set admin hash. Existing values are never overwritten automatically.",
-  );
-  process.exit(1);
-}
+if (!check.ok) throw new Error(`Database check failed: ${check.status}`);
+if ((await check.json()).length) throw new Error("An administrator already exists. Use the cabinet to change its password.");
+const temporary = randomBytes(24).toString("base64url");
+const hash = await hashPassword(temporary);
+const res = await fetch(`${endpoint}/secrets`, {
+  method: "POST", headers,
+  body: JSON.stringify([{ name: "ADMIN_PASSWORD_HASH", value: hash }]),
+});
+if (!res.ok) throw new Error(`Could not set administrator hash: ${res.status}`);
 await mkdir("artifacts", { recursive: true });
-await writeFile(
-  "artifacts/admin-access.local",
-  `Вход: https://mgngestalt.vercel.app/cabinet\nЛогин: admin\nВременный пароль: ${temporary}\nПри первом входе замените пароль.\n`,
-  { mode: 0o600 },
-);
-console.log(
-  "Admin password hash set. Temporary credentials saved only to artifacts/admin-access.local (gitignored, permissions 0600).",
-);
+await writeFile("artifacts/admin-access.local", `Вход: https://mgngestalt.vercel.app/cabinet\nЛогин: admin\nВременный пароль: ${temporary}\nПри первом входе замените пароль.\n`, { mode: 0o600 });
+await chmod("artifacts/admin-access.local", 0o600);
+console.log("Bootstrap configured. Password saved to artifacts/admin-access.local (0600, ignored by Git).");

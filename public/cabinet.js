@@ -1,3 +1,4 @@
+import { config } from "./config.js";
 import {
   $,
   $$,
@@ -30,11 +31,22 @@ const parseTopics = (value) => {
     })
     .map((t) => t[0].toLocaleUpperCase("ru") + t.slice(1));
 };
+// Session lasts within this browser tab; passwords are never saved here.
+const tokenKey = "mgg.session.v2";
+let token = sessionStorage.getItem(tokenKey) || "";
+const saveToken = (value = "") => {
+  token = value;
+  if (value) sessionStorage.setItem(tokenKey, value);
+  else sessionStorage.removeItem(tokenKey);
+};
+const authHeaders = () => (token ? { Authorization: `Bearer ${token}` } : {});
 const api = async (action, payload = {}) => {
-  const res = await fetch("/api/account", {
+  const res = await fetch(config.apiUrl, {
     method: "POST",
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(action === "login" ? {} : authHeaders()),
+    },
     body: JSON.stringify({ action, ...payload }),
     signal: AbortSignal.timeout(65000),
   });
@@ -46,11 +58,13 @@ const api = async (action, payload = {}) => {
   }
   if (!res.ok) {
     if (res.status === 401 && action !== "login") {
+      saveToken();
       user = null;
       showLogin();
     }
     throw new Error(data.error || "Не удалось выполнить действие.");
   }
+  if (data.token) saveToken(data.token);
   return data;
 };
 function bindPasswordToggles(root = document) {
@@ -102,6 +116,7 @@ $("#login-form").addEventListener("submit", (e) => {
 $("#logout").addEventListener("click", async () => {
   try {
     await api("logout");
+    saveToken();
     user = null;
     showLogin();
   } catch (e) {
@@ -509,7 +524,7 @@ function renderSettings() {
   });
 }
 try {
-  const status = await fetch("/api/account?action=status", {
+  const status = await fetch(`${config.apiUrl}?action=status`, {
     signal: AbortSignal.timeout(10000),
   });
   const info = await status.json();
@@ -517,15 +532,15 @@ try {
     $("#login-status").textContent =
       "Вход временно недоступен. Обратитесь к администратору.";
     $("#login-form button[type=submit]").disabled = true;
-  } else {
-    const me = await fetch("/api/account", {
-      credentials: "same-origin",
+  } else if (token) {
+    const me = await fetch(config.apiUrl, {
+      headers: authHeaders(),
       signal: AbortSignal.timeout(10000),
     });
     if (me.ok) {
       user = (await me.json()).user;
       showAccount();
-    }
+    } else if (me.status === 401) saveToken();
   }
 } catch {
   $("#login-status").textContent =

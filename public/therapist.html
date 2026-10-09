@@ -5,29 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f7f3ec" />
     <title>Терапевт — Магнитогорское гештальт-сообщество</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <meta
       name="description"
       content="Профиль гештальт-терапевта: о себе, подход, образование и контакты для записи."
     />
     <link rel="icon" href="/assets/favicon.png" type="image/png" />
     <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
-    <link rel="preconnect" href="https://api.github.com" crossorigin />
+    <link rel="preconnect" href="https://uwcvheonmfsibqtcfosw.supabase.co" crossorigin />
     <link rel="stylesheet" href="/style.css" />
     <script type="module" src="/profile.js"></script>
+    <script type="module" src="/backdrop.js"></script>
   </head>
   <body class="profile-page">
     <a class="skip" href="#main">Перейти к содержимому</a>
     <div class="site-page">
-    <header class="site-header">
-      <a class="brand" href="/"><span class="brand-symbol" data-logo></span><span class="sr-only">Магнитогорское гештальт-сообщество</span></a>
-      <nav class="main-nav" aria-label="Основная навигация"><a href="/#about">О сообществе</a><a href="/#therapists">Терапевты</a><a href="/#events">Мероприятия</a></nav>
-      <a class="header-login" href="/">На главную</a>
+    <header class="site-header block">
+      <div class="brand-group">
+        <a class="brand" href="/"><span class="brand-symbol" data-logo></span><span class="sr-only">Магнитогорское гештальт-сообщество</span></a>
+        <span class="partner-logos" data-partner-logo></span>
+      </div>
+      <div class="header-bar"><nav class="main-nav" aria-label="Основная навигация"><a href="/#about">О сообществе</a><a href="/#therapists">Терапевты</a><a href="/#events">Мероприятия</a></nav><a class="header-login" href="/">На главную</a></div>
     </header>
     <main id="main" class="page-content profile-main">
       <p id="profile-status" role="status">Загрузка анкеты…</p>
       <div id="profile"></div>
     </main>
-    <footer class="footer"><div><p>Магнитогорское гештальт-сообщество · <span id="footer-year"></span></p><a href="/">На главную</a></div></footer>
+    <footer class="footer"><p>Магнитогорское гештальт-сообщество · <span id="footer-year"></span></p><a href="/">На главную</a></footer>
     </div>
     <div id="toast" class="toast" role="status" hidden></div>
   </body>

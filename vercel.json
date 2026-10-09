@@ -3,28 +3,7 @@
   "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "functions": {
-    "api/account.js": {
-      "maxDuration": 60
-    }
-  },
   "rewrites": [
-    {
-      "source": "/1",
-      "destination": "/1/index.html"
-    },
-    {
-      "source": "/1/",
-      "destination": "/1/index.html"
-    },
-    {
-      "source": "/1/cabinet",
-      "destination": "/1/cabinet.html"
-    },
-    {
-      "source": "/1/therapist/:id",
-      "destination": "/1/therapist.html"
-    },
     {
       "source": "/cabinet",
       "destination": "/cabinet.html"
@@ -56,7 +35,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://cdn.jsdelivr.net https://fastly.jsdelivr.net https://raw.githubusercontent.com; connect-src 'self' https://api.github.com https://cdn.jsdelivr.net https://fastly.jsdelivr.net https://raw.githubusercontent.com; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+          "value": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://fastly.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net https://fastly.jsdelivr.net; img-src 'self' data: blob: https://cdn.jsdelivr.net https://fastly.jsdelivr.net https://uwcvheonmfsibqtcfosw.supabase.co; connect-src 'self' https://cdn.jsdelivr.net https://fastly.jsdelivr.net https://uwcvheonmfsibqtcfosw.supabase.co; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
         }
       ]
     },
@@ -68,16 +47,18 @@
           "value": "public, max-age=86400"
         }
       ]
-    },
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store"
-        }
-      ]
     }
   ],
-  "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"content\" ]; then exit 0; else exit 1; fi"
+  "redirects": [
+    {
+      "source": "/1",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/1/:path*",
+      "destination": "/:path*",
+      "permanent": true
+    }
+  ]
 }

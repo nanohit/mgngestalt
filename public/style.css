@@ -1,6 +1,6 @@
-/* Магнитогорское гештальт-сообщество
-   Тёплая бумага, чернила цвета логотипа и акварельные акценты.
-   Только системные шрифты: ничего не загружается со сторонних серверов. */
+/* Магнитогорское гештальт-сообщество — основной сайт
+   Тёплая бумага, разделы в блоках, акварельные венки на фоне (backdrop.js).
+   Один мягкий шрифт с засечками для всего сайта; шрифты системные. */
 
 :root {
   color-scheme: light;
@@ -30,14 +30,14 @@
   --radius-lg: 22px;
   --radius: 16px;
   --radius-sm: 11px;
-  --shadow-soft: 0 1px 2px rgb(60 45 20 / 4%), 0 12px 32px -20px rgb(60 45 20 / 24%);
+  --gap: 1.25rem;
+  --shadow-block: 0 1px 2px rgb(60 45 20 / 4%), 0 14px 34px -24px rgb(60 45 20 / 28%);
   --shadow-pop: 0 2px 6px rgb(60 45 20 / 6%), 0 24px 60px -24px rgb(30 40 40 / 35%);
   --ring: 0 0 0 3px rgb(45 106 93 / 25%);
 
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --serif: "Iowan Old Style", Charter, "Palatino Linotype", Palatino, "Noto Serif", Georgia, serif;
+  --font: "Iowan Old Style", Charter, "Palatino Linotype", Palatino, "Noto Serif", Georgia, serif;
 
-  font-family: var(--sans);
+  font-family: var(--font);
   font-size: 100%;
   color: var(--ink);
   background: var(--paper);
@@ -56,15 +56,44 @@ html {
 }
 
 body {
+  position: relative;
+  z-index: 0;
   margin: 0;
   min-height: 100vh;
-  font-size: 0.9375rem;
+  font-size: 1rem;
   line-height: 1.6;
+  font-variant-numeric: lining-nums;
   background:
     radial-gradient(44rem 22rem at 96% -5rem, rgb(251 226 190 / 50%), transparent 70%),
     radial-gradient(36rem 20rem at -6% -4rem, rgb(214 233 224 / 60%), transparent 70%),
     var(--paper);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Слой с акварельными венками лежит под блоками; при прокрутке венки
+   медленно поворачиваются (backdrop.js меняет только transform). */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  height: 100vh;
+  height: 100lvh;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+.backdrop.ready {
+  opacity: 1;
+}
+
+.backdrop canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: center;
+  will-change: transform;
 }
 
 ::selection {
@@ -128,10 +157,8 @@ h3 {
 
 h1,
 h2 {
-  font-family: var(--serif);
   font-weight: 600;
   line-height: 1.2;
-  letter-spacing: -0.005em;
   color: var(--ink);
   margin-bottom: 0.75rem;
 }
@@ -145,7 +172,7 @@ h2 {
 }
 
 h3 {
-  font-size: 1rem;
+  font-size: 1.0625rem;
   line-height: 1.35;
   margin-bottom: 0.5rem;
 }
@@ -197,14 +224,22 @@ p {
 }
 
 .eyebrow {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--muted);
   line-height: 1.5;
   margin-bottom: 0.375rem;
 }
 
 .small {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
+}
+
+/* Общий вид блока: всё содержимое лежит на «листах» поверх бумажного фона. */
+.block {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-block);
 }
 
 /* ——— Каркас ——— */
@@ -212,29 +247,41 @@ p {
 .site-page {
   max-width: 66rem;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 1.25rem 1.5rem 0;
 }
 
 .site-header {
   display: flex;
   align-items: center;
-  gap: 1rem 1.5rem;
-  margin-bottom: 2.75rem;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--line);
+  gap: 0.75rem 2rem;
+  margin-bottom: var(--gap);
+  padding: 0.625rem 1.75rem 0.625rem 0.75rem;
+}
+
+/* Меню и вход: на десктопе в строке с логотипами, на телефоне — плашка сверху. */
+.header-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 1.125rem;
+  flex-shrink: 0;
 }
 
 .brand {
-  flex-shrink: 0;
   display: block;
-  margin-left: -0.375rem;
   border-radius: 50%;
 }
 
-/* Сам логотип — PNG/WebP с прозрачным фоном и названием внутри. */
 .brand-symbol {
   display: block;
-  width: 7.5rem;
+  width: 6.5rem;
   aspect-ratio: 1;
 }
 
@@ -249,27 +296,39 @@ p {
   transform: rotate(-8deg);
 }
 
+.partner-logos {
+  display: block;
+  padding-left: 1.125rem;
+  border-left: 1px solid var(--line-strong);
+}
+
+.partner-logos img {
+  width: auto;
+  height: 4rem;
+  mix-blend-mode: multiply;
+}
+
 .main-nav {
   display: flex;
   gap: 0.125rem;
-  margin-left: auto;
+  min-width: 0;
+  margin-left: -0.875rem;
 }
 
 .main-nav a {
   display: block;
   flex-shrink: 0;
-  white-space: nowrap;
   padding: 0.4375rem 0.875rem;
   border-radius: 999px;
   color: var(--ink-2);
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: 1rem;
   text-decoration: none;
+  white-space: nowrap;
   transition: background 0.15s, color 0.15s;
 }
 
 .main-nav a:hover {
-  background: rgb(29 58 65 / 6%);
+  background: var(--paper);
   color: var(--ink);
 }
 
@@ -278,14 +337,14 @@ p {
   align-items: center;
   gap: 0.4375rem;
   flex-shrink: 0;
-  min-height: 2.5rem;
-  padding: 0.375rem 1rem 0.375rem 0.8125rem;
+  margin-left: auto;
+  min-height: 2.625rem;
+  padding: 0.375rem 1.0625rem 0.375rem 0.875rem;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
-  background: var(--surface);
+  background: var(--paper);
   color: var(--ink);
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.9375rem;
   text-decoration: none;
   white-space: nowrap;
   transition: background 0.15s, border-color 0.15s;
@@ -316,47 +375,36 @@ p {
 
 .home-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 18.5rem;
-  gap: 3.5rem;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: var(--gap);
   align-items: start;
-  padding-bottom: 4.5rem;
 }
 
-.content-section + .content-section {
-  margin-top: 3.5rem;
+.main-column {
+  display: grid;
+  gap: var(--gap);
+  min-width: 0;
+}
+
+.content-section {
+  padding: 1.75rem 2rem;
 }
 
 #about h1 {
-  margin-bottom: 1rem;
-}
-
-#about p {
-  max-width: 40em;
-  color: var(--muted);
+  margin-bottom: 0.75rem;
 }
 
 #about #about-copy {
   max-width: 32em;
-  font-family: var(--serif);
+  margin-bottom: 0.25rem;
   font-size: 1.25rem;
   line-height: 1.55;
   color: var(--ink);
 }
 
-/* Заголовок раздела с тонкой линией до края колонки. */
 .content-section > h2 {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
   font-size: 1.5rem;
-  margin-bottom: 0.375rem;
-}
-
-.content-section > h2::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--line-strong);
+  margin-bottom: 0.25rem;
 }
 
 .section-description {
@@ -382,8 +430,7 @@ p {
   flex-direction: column;
   gap: 0.3125rem;
   margin: 0;
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: 0.875rem;
   color: var(--muted);
 }
 
@@ -398,7 +445,7 @@ textarea {
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: var(--field);
-  font-size: 0.9375rem;
+  font-size: 1rem;
   line-height: 1.4;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -439,32 +486,36 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 .results-label {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--muted);
-  margin: 1.125rem 0 0.625rem;
+  margin: 1.25rem 0 0.25rem;
 }
 
-/* Карточки терапевтов */
+/* Отдельные анкеты с расстоянием между ними. */
 
 .therapist-grid {
   display: grid;
-  gap: 0.75rem;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
 .therapist-card {
   display: grid;
   grid-template-columns: 6.5rem minmax(0, 1fr);
-  gap: 1.125rem;
-  padding: 1rem;
+  gap: 1.25rem;
+  padding: 1.25rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: background 0.2s;
+}
+
+.therapist-card:last-child {
+  border-radius: var(--radius);
 }
 
 .therapist-card:hover {
-  border-color: var(--line-strong);
-  box-shadow: var(--shadow-soft);
+  background: rgb(247 243 236 / 55%);
 }
 
 .therapist-card > a {
@@ -485,7 +536,6 @@ input[type="search"]::-webkit-search-cancel-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--serif);
   font-size: 1.875rem;
   color: var(--ink-2);
   background: linear-gradient(160deg, var(--accent-soft), #d5e6dc);
@@ -513,7 +563,7 @@ input[type="search"]::-webkit-search-cancel-button {
   display: flex;
   flex-wrap: wrap;
   gap: 0 0.4375rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--muted);
   margin-bottom: 0.125rem;
 }
@@ -524,8 +574,7 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 .card-name {
-  font-family: var(--serif);
-  font-size: 1.1875rem;
+  font-size: 1.25rem;
   font-weight: 600;
   line-height: 1.25;
   margin-bottom: 0.375rem;
@@ -556,12 +605,12 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .tag {
   display: inline-block;
-  padding: 0.1875rem 0.625rem;
+  padding: 0.125rem 0.6875rem;
   border-radius: 999px;
   background: var(--paper-deep);
   color: var(--ink-2);
-  font-size: 0.8125rem;
-  line-height: 1.45;
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 .card-footer {
@@ -571,16 +620,18 @@ input[type="search"]::-webkit-search-cancel-button {
   gap: 0.375rem 1rem;
   flex-wrap: wrap;
   margin-top: auto;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--line);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: var(--ink);
 }
 
 .card-footer .text-link {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.9375rem;
+  font-weight: 400;
+}
+
+.card-footer > span {
+  white-space: nowrap;
 }
 
 .card-footer .text-link::after {
@@ -598,37 +649,40 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .empty-state {
   position: relative;
-  padding: 1.25rem 1.25rem 1.25rem 4.25rem;
-  border: 1px dashed var(--line-strong);
+  padding: 1.125rem 1.25rem 1.125rem 4.25rem;
   border-radius: var(--radius);
-  background: rgb(255 253 249 / 55%);
+  background: var(--paper);
 }
 
 .empty-state::before {
   content: "";
   position: absolute;
   left: 1.25rem;
-  top: 1.25rem;
+  top: 1.125rem;
   width: 2rem;
   height: 2rem;
-  background: url("/assets/wreath-mark.webp") center/contain no-repeat;
+  background: url("./assets/wreath-mark.webp") center/contain no-repeat;
 }
 
 .empty-state h3 {
-  font-size: 0.9375rem;
+  font-size: 1rem;
   margin-bottom: 0.1875rem;
   color: var(--ink);
 }
 
 .empty-state p {
-  font-size: 0.875rem;
-  line-height: 1.6;
+  font-size: 0.9375rem;
+  line-height: 1.55;
   margin-bottom: 0;
   color: var(--muted);
 }
 
 .empty-state .button {
   margin-top: 0.875rem;
+}
+
+.therapist-grid > .empty-state {
+  margin: 0;
 }
 
 /* Кнопки и ссылки */
@@ -638,13 +692,13 @@ input[type="search"]::-webkit-search-cancel-button {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  min-height: 2.625rem;
-  padding: 0.5rem 1.25rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1.375rem;
   border: 1px solid transparent;
   border-radius: 999px;
   background: var(--accent);
   color: #fff;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.3;
   text-align: center;
@@ -665,6 +719,7 @@ input[type="search"]::-webkit-search-cancel-button {
   background: var(--surface);
   color: var(--ink);
   border-color: var(--line-strong);
+  font-weight: 400;
 }
 
 .button.secondary:hover {
@@ -689,7 +744,7 @@ input[type="search"]::-webkit-search-cancel-button {
   border: 0;
   background: transparent;
   color: var(--accent);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-decoration-color: rgb(45 106 93 / 40%);
@@ -722,52 +777,40 @@ input[type="search"]::-webkit-search-cancel-button {
   background: var(--paper-deep);
 }
 
-/* Боковая колонка */
+/* Боковая колонка: каждый раздел — отдельный блок */
 
 .sidebar {
   display: grid;
-  gap: 1.5rem;
+  gap: var(--gap);
   min-width: 0;
 }
 
+.sidebar-section {
+  padding: 1.25rem 1.375rem;
+}
+
 .sidebar-section h2 {
-  font-size: 1.0625rem;
+  font-size: 1.1875rem;
   margin-bottom: 0.5rem;
 }
 
 .sidebar-section p {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   line-height: 1.6;
   color: var(--ink-2);
   margin-bottom: 0.5rem;
 }
 
 .sidebar-section > a {
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.9375rem;
 }
 
-/* Календарь — единственная «карточка» в колонке, остальное — тихий текст. */
 #events {
-  padding: 1.125rem 1.125rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow-soft);
+  padding: 1.25rem 1.25rem 0.75rem;
 }
 
 #events > h2 {
   margin-bottom: 0.875rem;
-}
-
-.sidebar-section:not(#events) {
-  padding: 1.25rem 0.25rem 0;
-  border-top: 1px solid var(--line-strong);
-}
-
-#events + .sidebar-section {
-  border-top: 0;
-  padding-top: 0.25rem;
 }
 
 /* Календарь */
@@ -782,8 +825,7 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .calendar-header h3 {
   margin: 0;
-  font-family: var(--serif);
-  font-size: 1rem;
+  font-size: 1.0625rem;
   font-weight: 600;
   color: var(--ink);
 }
@@ -802,7 +844,7 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .weekdays {
   margin-bottom: 0.25rem;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--muted);
 }
 
@@ -810,15 +852,15 @@ input[type="search"]::-webkit-search-cancel-button {
   aspect-ratio: 1;
   width: 100%;
   min-width: 0;
-  max-width: 2.25rem;
+  max-width: 2.375rem;
   margin: 0 auto;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: transparent;
   color: var(--ink-2);
-  font-size: 0.875rem;
-  font-variant-numeric: tabular-nums;
+  font-size: 0.9375rem;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 .calendar-days button:disabled {
@@ -853,7 +895,7 @@ input[type="search"]::-webkit-search-cancel-button {
   flex-wrap: wrap;
   gap: 0.4375rem;
   margin-top: 0.625rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--muted);
 }
 
@@ -867,12 +909,12 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .calendar-legend button {
   margin-left: auto;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
 }
 
 .sidebar-section .local-time {
   margin: 0.375rem 0 0.75rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--muted);
 }
 
@@ -886,7 +928,7 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .event-row {
   display: grid;
-  grid-template-columns: 2.75rem minmax(0, 1fr);
+  grid-template-columns: 2.875rem minmax(0, 1fr);
   gap: 0.75rem;
   width: 100%;
   padding: 0.5625rem 0.5rem;
@@ -906,11 +948,10 @@ input[type="search"]::-webkit-search-cancel-button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 3rem;
+  height: 3.125rem;
   border-radius: 12px;
   background: var(--sun-soft);
-  font-family: var(--serif);
-  font-size: 1.1875rem;
+  font-size: 1.25rem;
   font-weight: 600;
   line-height: 1;
   color: var(--ink);
@@ -918,9 +959,8 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .event-date small {
   margin-top: 0.1875rem;
-  font-family: var(--sans);
-  font-size: 0.6875rem;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 400;
   color: var(--ink-2);
 }
 
@@ -929,13 +969,13 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 .event-info > span {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--muted);
 }
 
 .event-info h3 {
   margin: 0.0625rem 0 0.1875rem;
-  font-size: 0.9375rem;
+  font-size: 1rem;
   font-weight: 600;
   line-height: 1.35;
   color: var(--ink);
@@ -950,7 +990,7 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .event-info p {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   line-height: 1.45;
   color: var(--muted);
 }
@@ -958,8 +998,6 @@ input[type="search"]::-webkit-search-cancel-button {
 .event-list .empty-state {
   margin: 0.25rem 0.5rem 0.375rem;
   padding: 0.875rem 0.875rem 0.875rem 3.25rem;
-  border: 0;
-  background: var(--paper);
 }
 
 .event-list .empty-state::before {
@@ -970,11 +1008,11 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 .event-list .empty-state h3 {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .event-list .empty-state p {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
 }
 
 /* Подвал */
@@ -983,26 +1021,19 @@ input[type="search"]::-webkit-search-cancel-button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
-  padding: 1.75rem 0 2.25rem;
-  border-top: 1px solid var(--line-strong);
-}
-
-.footer p {
-  margin-bottom: 0.25rem;
-  font-size: 0.8125rem;
-  line-height: 1.6;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  margin: var(--gap) 0 1.5rem;
+  padding: 1rem 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  font-size: 0.875rem;
   color: var(--muted);
 }
 
-.footer a {
-  font-size: 0.8125rem;
-}
-
-.institutes-logo {
-  width: 10rem;
-  height: auto;
-  mix-blend-mode: multiply;
+.footer p {
+  margin: 0;
 }
 
 /* Диалоги и уведомления */
@@ -1072,7 +1103,7 @@ input[type="search"]::-webkit-search-cancel-button {
   border-radius: 14px;
   background: var(--ink);
   color: #fff;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   box-shadow: var(--shadow-pop);
   transform: translateX(-50%);
   animation: toast-in 0.25s ease-out;
@@ -1090,7 +1121,7 @@ input[type="search"]::-webkit-search-cancel-button {
   background: var(--sun-soft);
   border-bottom: 1px solid var(--sun-line);
   color: var(--ink);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   text-align: center;
 }
 
@@ -1098,14 +1129,16 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .page-content {
   min-height: 26rem;
-  padding: 0 0 4.5rem;
+}
+
+.profile-main #profile-status {
+  padding: 1.5rem 0.5rem;
 }
 
 .breadcrumb {
   display: inline-block;
-  margin-bottom: 1.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
+  margin: 0.25rem 0.5rem 1rem;
+  font-size: 0.9375rem;
   text-decoration: none;
 }
 
@@ -1116,7 +1149,7 @@ input[type="search"]::-webkit-search-cancel-button {
 .profile-layout {
   display: grid;
   grid-template-columns: 15rem minmax(0, 1fr);
-  gap: 3rem;
+  gap: var(--gap);
   align-items: start;
 }
 
@@ -1127,7 +1160,7 @@ input[type="search"]::-webkit-search-cancel-button {
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-block);
 }
 
 .profile-sidebar .portrait {
@@ -1147,7 +1180,7 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .profile-sidebar > p {
   margin: 0 0.25rem;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   line-height: 1.55;
   text-align: center;
   text-wrap: balance;
@@ -1155,7 +1188,11 @@ input[type="search"]::-webkit-search-cancel-button {
 
 .profile-content {
   min-width: 0;
-  padding-top: 0.25rem;
+  padding: 1.75rem 2rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-block);
 }
 
 .profile-content h1 {
@@ -1163,9 +1200,9 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 .profile-content .lead {
-  max-width: 36em;
-  font-size: 1.0625rem;
-  line-height: 1.65;
+  max-width: 34em;
+  font-size: 1.1875rem;
+  line-height: 1.6;
   color: var(--ink-2);
 }
 
@@ -1174,18 +1211,18 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 .profile-block {
-  margin-top: 1.75rem;
-  padding-top: 1.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1.375rem;
   border-top: 1px solid var(--line);
 }
 
 .profile-block h2 {
-  font-size: 1.25rem;
+  font-size: 1.3125rem;
 }
 
 .profile-block p {
-  max-width: 42em;
-  line-height: 1.75;
+  max-width: 40em;
+  line-height: 1.7;
   color: var(--ink-2);
   white-space: pre-line;
 }
@@ -1194,18 +1231,18 @@ input[type="search"]::-webkit-search-cancel-button {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .contact-links a {
   display: inline-flex;
   align-items: center;
-  min-height: 2.625rem;
-  padding: 0.4375rem 1rem;
+  min-height: 2.75rem;
+  padding: 0.4375rem 1.0625rem;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
-  background: var(--surface);
+  background: var(--paper);
   color: var(--ink);
-  font-weight: 500;
   text-decoration: none;
   overflow-wrap: anywhere;
   transition: background 0.15s, border-color 0.15s;
@@ -1229,19 +1266,23 @@ input[type="search"]::-webkit-search-cancel-button {
 
 /* ——— Личный кабинет ——— */
 
+.cabinet-main {
+  padding-bottom: 0.5rem;
+}
+
 .login-card {
   width: 100%;
-  max-width: 25rem;
-  margin: 0.5rem auto 2rem;
+  max-width: 26rem;
+  margin: 0.75rem auto 0;
   padding: 2rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-block);
 }
 
 .small-title {
-  font-size: clamp(1.5rem, 1.3rem + 0.6vw, 1.75rem);
+  font-size: clamp(1.5rem, 1.3rem + 0.6vw, 1.875rem);
   margin-bottom: 0.625rem;
 }
 
@@ -1255,8 +1296,7 @@ form label,
   flex-direction: column;
   gap: 0.375rem;
   margin-bottom: 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.9375rem;
   color: var(--ink);
 }
 
@@ -1268,7 +1308,7 @@ form textarea {
 form input[type="file"] {
   min-height: 0;
   padding: 0.4375rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
 }
 
 input[type="file"]::file-selector-button {
@@ -1311,8 +1351,7 @@ input[type="file"]::file-selector-button {
   border-left: 1px solid var(--line);
   background: var(--paper);
   color: var(--ink-2);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: 0.875rem;
 }
 
 .password-toggle:hover {
@@ -1322,7 +1361,7 @@ input[type="file"]::file-selector-button {
 .form-status {
   min-height: 1.375rem;
   margin: 0.75rem 0;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: var(--danger);
 }
 
@@ -1330,8 +1369,17 @@ input[type="file"]::file-selector-button {
   color: var(--accent);
 }
 
+#account-view {
+  padding: 1.75rem 2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-block);
+}
+
 .cabinet-heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1.25rem;
@@ -1352,22 +1400,20 @@ input[type="file"]::file-selector-button {
   gap: 0.125rem;
   width: fit-content;
   max-width: 100%;
-  margin-bottom: 1.375rem;
+  margin-bottom: 1.5rem;
   padding: 0.25rem;
-  border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgb(255 253 249 / 75%);
+  background: var(--paper);
 }
 
 .tabs button {
-  min-height: 2.25rem;
-  padding: 0.3125rem 1rem;
+  min-height: 2.375rem;
+  padding: 0.3125rem 1.0625rem;
   border: 0;
   border-radius: 999px;
   background: transparent;
   color: var(--ink-2);
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.9375rem;
   transition: background 0.15s, color 0.15s;
 }
 
@@ -1383,10 +1429,6 @@ input[type="file"]::file-selector-button {
 
 .editor {
   max-width: 46rem;
-  padding: 1.75rem 2rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: var(--surface);
 }
 
 .editor h2 {
@@ -1403,7 +1445,6 @@ input[type="file"]::file-selector-button {
 .editor > .text-link {
   display: inline-block;
   margin-bottom: 1rem;
-  font-weight: 500;
 }
 
 .editor .intro {
@@ -1437,7 +1478,6 @@ input[type="file"]::file-selector-button {
   border: 1px solid var(--line-strong);
   border-radius: 999px;
   background: var(--field);
-  font-weight: 400;
   line-height: 1.4;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
@@ -1472,7 +1512,7 @@ input[type="file"]::file-selector-button {
 
 .hint {
   margin: -0.25rem 0 1rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   line-height: 1.6;
   color: var(--muted);
 }
@@ -1483,7 +1523,7 @@ input[type="file"]::file-selector-button {
   border: 1px solid #f0dca8;
   border-radius: 13px;
   background: #fdf3dc;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   line-height: 1.6;
 }
 
@@ -1522,7 +1562,7 @@ input[type="file"]::file-selector-button {
 }
 
 .photo-actions .text-link {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
 }
 
 .account-list {
@@ -1543,14 +1583,13 @@ input[type="file"]::file-selector-button {
 }
 
 .list-heading h2 .muted {
-  font-family: var(--sans);
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 400;
 }
 
 .disclosure {
   margin-bottom: 1.125rem;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   line-height: 1.6;
   color: var(--muted);
 }
@@ -1560,21 +1599,18 @@ input[type="file"]::file-selector-button {
   align-items: center;
   justify-content: space-between;
   gap: 1.25rem;
-  margin-bottom: 0.5rem;
-  padding: 0.875rem 1.125rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+  padding: 0.875rem 0;
+  border-top: 1px solid var(--line);
 }
 
 .account-row h3 {
   margin: 0 0 0.125rem;
-  font-size: 1rem;
+  font-size: 1.0625rem;
 }
 
 .account-row p {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--muted);
 }
 
@@ -1587,8 +1623,7 @@ input[type="file"]::file-selector-button {
 .row-actions .button {
   min-height: 2.25rem;
   padding: 0.3125rem 0.9375rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
+  font-size: 0.875rem;
 }
 
 .credentials {
@@ -1621,7 +1656,7 @@ input[type="file"]::file-selector-button {
   border: 1px solid #efc9c0;
   border-radius: 13px;
   background: var(--danger-soft);
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   line-height: 1.6;
 }
 
@@ -1633,7 +1668,7 @@ input[type="file"]::file-selector-button {
 
 .footer-note {
   margin-top: 1rem;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 }
 
 .inline-link {
@@ -1644,8 +1679,7 @@ input[type="file"]::file-selector-button {
 
 @media (max-width: 1000px) {
   .home-layout {
-    grid-template-columns: minmax(0, 1fr) 17rem;
-    gap: 2.25rem;
+    grid-template-columns: minmax(0, 1fr) 17.5rem;
   }
 
   .filters {
@@ -1661,102 +1695,170 @@ input[type="file"]::file-selector-button {
   }
 }
 
+/* Узкие экраны: логотипы сверху, под ними строка меню в том же блоке.
+   При прокрутке блок уезжает ровно на высоту логотипов, и строка меню
+   остаётся прилипшей к верху экрана. */
+@media (max-width: 920px) {
+  html {
+    scroll-padding-top: 4.25rem;
+  }
+
+  .site-header {
+    --brand-h: 7.75rem;
+    position: sticky;
+    top: calc(-1px - var(--brand-h));
+    z-index: 40;
+    flex-wrap: wrap;
+    gap: 0;
+    padding: 0 0.75rem;
+  }
+
+  .brand-group {
+    height: var(--brand-h);
+  }
+
+  .header-bar {
+    flex: 0 0 calc(100% + 1.5rem);
+    height: 3.25rem;
+    margin: 0 -0.75rem;
+    padding: 0 0.75rem 0 0.375rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .main-nav {
+    margin-left: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .profile-sidebar {
+    top: 4.25rem;
+  }
+}
+
 @media (max-width: 820px) {
   .site-page {
-    padding: 0 1.25rem;
+    padding: 1rem 1.25rem 0;
   }
 
   .home-layout {
-    display: block;
+    grid-template-columns: 1fr;
   }
 
   .sidebar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.25rem 2rem;
     align-items: start;
-    margin-top: 3rem;
   }
 
   #events {
     grid-row: span 3;
   }
 
-  #events + .sidebar-section {
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--line-strong);
-  }
-
   .profile-layout {
     grid-template-columns: 12.5rem minmax(0, 1fr);
-    gap: 2rem;
   }
 }
 
-/* Узкие экраны: логотип и кнопка входа в первой строке, меню — второй строкой. */
-@media (max-width: 760px) {
-  .site-header {
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-    margin-bottom: 2rem;
-    padding: 0.75rem 0 0;
-  }
-
-  .brand-symbol {
-    width: 6rem;
-  }
-
-  .header-login {
-    margin-left: auto;
-  }
-
-  .main-nav {
-    order: 3;
-    width: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
-    margin: 0;
-    padding: 0.375rem 0;
-    border-top: 1px solid var(--line);
-  }
-
-  .main-nav a {
-    padding: 0.5rem 0.625rem;
-  }
-
-  .main-nav a:first-child {
-    margin-left: -0.625rem;
-  }
-
-}
-
-@media (max-width: 680px) {
-  body {
-    font-size: 1rem;
+@media (max-width: 640px) {
+  :root {
+    --gap: 0.875rem;
   }
 
   .site-page {
-    padding: 0 1rem;
+    padding: 0.75rem 0.75rem 0;
   }
 
-  input:not([type="checkbox"], [type="radio"]),
-  select,
-  textarea {
-    font-size: 1rem;
+  .block,
+  .profile-content,
+  .profile-sidebar,
+  .login-card,
+  #account-view {
+    border-radius: 18px;
+  }
+
+  .site-header {
+    --brand-h: 7.5rem;
+    padding: 0 0.5rem;
+  }
+
+  .brand-group {
+    width: 100%;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .partner-logos {
+    padding-left: 1rem;
+  }
+
+  .header-bar {
+    flex-basis: calc(100% + 1rem);
+    gap: 0.25rem;
+    margin: 0 -0.5rem;
+    padding: 0 0.5rem 0 0.25rem;
+  }
+
+  /* Пункты меню по центру между краем и кнопкой входа, через тонкие палочки. */
+  .main-nav {
+    flex: 1;
+    gap: 0;
+    justify-content: center;
+    justify-content: safe center;
+  }
+
+  .main-nav a {
+    position: relative;
+  }
+
+  .main-nav a + a::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 1px;
+    height: 1.1em;
+    background: var(--line-strong);
+    transform: translateY(-50%);
+  }
+
+  /* Подпись остаётся для экранного диктора, на узком экране видна иконка. */
+  .header-login {
+    justify-content: center;
+    gap: 0;
+    width: 2.375rem;
+    height: 2.375rem;
+    min-height: 0;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .header-login::before {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .main-nav a {
+    padding: 0.5rem 0.4rem;
+    font-size: 0.9375rem;
+  }
+
+  .content-section {
+    padding: 1.375rem 1.25rem;
   }
 
   #about #about-copy {
     font-size: 1.125rem;
   }
 
-  .content-section + .content-section {
-    margin-top: 2.75rem;
+  .therapist-grid {
+    margin: 1rem 0 0;
   }
 
-  /* Фото и имя рядом, описание — на всю ширину карточки. */
+  /* Фото и имя рядом, описание — на всю ширину строки. */
   .therapist-card {
     grid-template-columns: 4.5rem minmax(0, 1fr);
     gap: 0 0.875rem;
-    padding: 0.9375rem;
+    padding: 1rem;
   }
 
   .therapist-card > a {
@@ -1793,7 +1895,6 @@ input[type="file"]::file-selector-button {
 
   .card-description {
     margin-top: 0.75rem;
-    font-size: 0.9375rem;
   }
 
   .portrait {
@@ -1806,9 +1907,12 @@ input[type="file"]::file-selector-button {
     font-size: 1.375rem;
   }
 
+  .therapist-grid > .empty-state {
+    margin: 0.5rem 1.25rem 1.375rem;
+  }
+
   .sidebar {
     grid-template-columns: 1fr;
-    margin-top: 2.75rem;
   }
 
   #events {
@@ -1822,16 +1926,16 @@ input[type="file"]::file-selector-button {
 
   .calendar-days button {
     max-width: 2.75rem;
-    font-size: 0.9375rem;
   }
 
   .footer {
-    flex-wrap: wrap;
-    align-items: flex-start;
+    margin-bottom: 0.75rem;
+    padding: 0.875rem 1.25rem;
+    border-radius: 18px;
   }
 
   .profile-layout {
-    display: block;
+    grid-template-columns: 1fr;
   }
 
   .profile-sidebar {
@@ -1840,7 +1944,6 @@ input[type="file"]::file-selector-button {
     grid-template-columns: 7rem minmax(0, 1fr);
     gap: 0 1rem;
     align-items: center;
-    margin-bottom: 1.5rem;
   }
 
   .profile-sidebar .portrait {
@@ -1857,13 +1960,16 @@ input[type="file"]::file-selector-button {
     text-align: left;
   }
 
+  .profile-content {
+    padding: 1.375rem 1.25rem 0.5rem;
+  }
+
   .login-card {
     padding: 1.75rem 1.25rem;
   }
 
-  .editor {
-    padding: 1.5rem 1.125rem;
-    border-radius: 18px;
+  #account-view {
+    padding: 1.375rem 1.125rem;
   }
 
   .form-grid,
@@ -1876,7 +1982,7 @@ input[type="file"]::file-selector-button {
   }
 
   .tabs {
-    border-radius: 20px;
+    border-radius: 18px;
   }
 
   .cabinet-heading,
@@ -1900,25 +2006,6 @@ input[type="file"]::file-selector-button {
 }
 
 @media (max-width: 380px) {
-  .brand-symbol {
-    width: 5.25rem;
-  }
-
-  .header-login {
-    padding-inline: 0.75rem 0.875rem;
-    font-size: 0.8125rem;
-  }
-
-  .main-nav a {
-    padding-inline: 0.375rem;
-    font-size: 0.8125rem;
-  }
-
-  .main-nav a:first-child {
-    margin-left: -0.375rem;
-  }
-
-
   .card-footer {
     flex-direction: column;
     align-items: flex-start;
@@ -1930,6 +2017,50 @@ input[type="file"]::file-selector-button {
 
   .profile-sidebar .portrait {
     width: 5.75rem;
+  }
+}
+
+/* На широких телефонах пунктам меню хватает места на воздух вокруг палочек. */
+@media (min-width: 410px) and (max-width: 640px) {
+  .main-nav a {
+    padding-inline: 0.625rem;
+  }
+}
+
+/* Строка меню на узких телефонах: три пункта и вход должны влезать целиком. */
+@media (max-width: 389px) {
+  .main-nav a {
+    padding-inline: 0.375rem;
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 370px) {
+  .main-nav a {
+    font-size: 0.8125rem;
+  }
+}
+
+@media (max-width: 350px) {
+  .site-page {
+    padding-inline: 0.5rem;
+  }
+
+  .site-header {
+    --brand-h: 6.75rem;
+  }
+
+  .brand-symbol {
+    width: 5.5rem;
+  }
+
+  .partner-logos img {
+    height: 3.25rem;
+  }
+
+  .main-nav a {
+    padding-inline: 0.25rem;
+    font-size: 0.78125rem;
   }
 }
 
@@ -1949,6 +2080,7 @@ input[type="file"]::file-selector-button {
 }
 
 @media (forced-colors: active) {
+  .block,
   .button,
   .header-login,
   .main-nav a,

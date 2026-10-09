@@ -2,8 +2,7 @@ import { config } from "./config.js";
 export const $ = (s, root = document) => root.querySelector(s);
 export const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 export const demo = new URLSearchParams(location.search).get("demo") === "1";
-// Preview of the next design lives under /1; keep visitors inside it.
-export const base = /^\/1(\/|$)/.test(location.pathname) ? "/1" : "";
+export const base = "";
 export const escape = (value) =>
   String(value ?? "").replace(
     /[&<>"']/g,
@@ -26,7 +25,7 @@ export function safeUrl(value) {
 }
 export function photoUrl(value) {
   if (!value || !/^uploads\/[a-f0-9-]+\.webp$/.test(value)) return "";
-  return `https://cdn.jsdelivr.net/gh/${config.repository}@${config.dataBranch}/${value}`;
+  return `${config.storageUrl}/${value}`;
 }
 export const initials = (name) =>
   name
@@ -43,7 +42,7 @@ export const formatLabel = (p) =>
       : "Очно";
 export const priceLabel = (p) =>
   p.price != null
-    ? `от ${Number(p.price).toLocaleString("ru-RU")} ₽`
+    ? `от ${Number(p.price).toLocaleString("ru-RU").replace(/[\s\u00a0\u202f]/g, "\u202f")} ₽`
     : "Стоимость по запросу";
 export function portrait(p, className = "") {
   const src = photoUrl(p.photo);
@@ -106,14 +105,14 @@ export function initShared() {
   if (config.logos[0]) {
     $$("[data-logo]").forEach((el) => {
       const img = document.createElement("img");
-      img.src = `https://cdn.jsdelivr.net/gh/${config.repository}@${config.assetRef}/public/assets/${config.logos[0]}`;
+      img.src = new URL(`./assets/${config.logos[0]}`, import.meta.url).href;
       img.alt = "";
       img.width = 48;
       img.height = 48;
       img.addEventListener(
         "error",
         () => {
-          img.src = `/assets/${config.logos[0]}`;
+          img.src = img.src.replace("cdn.jsdelivr.net", "fastly.jsdelivr.net");
         },
         { once: true },
       );
@@ -126,11 +125,11 @@ export function initShared() {
     img.className = "institutes-logo";
     if (partnerSlot.matches(".footer")) img.loading = "lazy";
     img.alt = "ОПП ГП · программа «Московский гештальт институт»";
-    img.src = `https://cdn.jsdelivr.net/gh/${config.repository}@${config.assetRef}/public/assets/${config.logos[1]}`;
+    img.src = new URL(`./assets/${config.logos[1]}`, import.meta.url).href;
     img.addEventListener(
       "error",
       () => {
-        img.src = `/assets/${config.logos[1]}`;
+        img.src = img.src.replace("cdn.jsdelivr.net", "fastly.jsdelivr.net");
       },
       { once: true },
     );
@@ -165,41 +164,23 @@ export function initShared() {
 }
 export async function loadSite() {
   if (demo) return (await import("./demo.js")).demoSite;
-  // The GitHub API serves the branch with a 60-second cache, but allows
-  // 60 requests an hour per visitor IP. Static raw files ignore query
-  // strings and stay cached for up to 5 minutes; jsDelivr caches longer.
-  const path = `${config.repository}/${config.dataBranch}/data/site.json`;
   const sources = [
-    [
-      `https://api.github.com/repos/${config.repository}/contents/data/site.json?ref=${config.dataBranch}`,
-      { headers: { Accept: "application/vnd.github.raw+json" } },
-    ],
-    [`https://raw.githubusercontent.com/${path}`],
-    [`https://cdn.jsdelivr.net/gh/${config.repository}@${config.dataBranch}/data/site.json`],
-    [`https://fastly.jsdelivr.net/gh/${config.repository}@${config.dataBranch}/data/site.json`],
+    `${config.storageUrl}/data/site.json?cacheNonce=${Math.floor(Date.now() / 60000)}`,
+    new URL("./data/site.json", import.meta.url).href,
   ];
-  for (const [url, options] of sources) {
+  for (let i = 0; i < sources.length; i++) {
     try {
-      const res = await fetch(url, {
-        ...options,
-        signal: AbortSignal.timeout(4500),
-      });
+      const res = await fetch(sources[i], { signal: AbortSignal.timeout(10000) });
       if (!res.ok) continue;
       const data = await res.json();
-      if (!Array.isArray(data.therapists) || !Array.isArray(data.events))
-        continue;
+      if (!Array.isArray(data.therapists) || !Array.isArray(data.events)) continue;
+      if (i) toast("Показана сохранённая версия. Обновления временно недоступны.");
       return data;
     } catch {}
   }
-  const res = await fetch("/data/site.json");
-  if (!res.ok)
-    throw new Error(
-      "Не удалось загрузить данные. Попробуйте обновить страницу.",
-    );
-  const data = await res.json();
-  toast("Показана сохранённая версия. Обновления временно недоступны.");
-  return data;
+  throw new Error("Не удалось загрузить данные. Попробуйте обновить страницу.");
 }
+
 export function therapistCard(p) {
   const link = `${base}/therapist/${encodeURIComponent(p.id)}${demo ? "?demo=1" : ""}`;
   return `<article class="therapist-card"><a href="${link}" aria-label="Профиль: ${escape(p.name)}">${portrait(p)}</a><div class="card-body"><p class="card-kicker"><span>Гештальт-терапевт</span><span>${escape(formatLabel(p))}</span></p><h3 class="card-name"><a href="${link}">${escape(p.name)}</a></h3><p class="card-description">${escape(p.summary)}</p><div class="tags">${(

@@ -6,7 +6,7 @@ process.env.NODE_ENV = "development";
 try {
   process.loadEnvFile(".env.local");
 } catch {}
-const { default: handler } = await import("../api/account.js");
+const { default: handler } = await import("../lib/api.js");
 const root = resolve("public"),
   mime = {
     ".html": "text/html; charset=utf-8",
@@ -34,12 +34,13 @@ http
         return handler(req, res);
       }
       let path = url.pathname;
-      // Same rewrites as vercel.json, including the /1 design preview.
-      const preview = /^\/1(\/|$)/.test(path) ? "/1" : "";
-      const page = path.slice(preview.length) || "/";
-      if (page === "/") path = preview + "/index.html";
-      if (page === "/cabinet") path = preview + "/cabinet.html";
-      if (page.startsWith("/therapist/")) path = preview + "/therapist.html";
+      if (/^\/1(\/|$)/.test(path)) {
+        res.writeHead(308, { Location: (path.slice(2) || "/") + url.search });
+        return res.end();
+      }
+      if (path === "/") path = "/index.html";
+      if (path === "/cabinet") path = "/cabinet.html";
+      if (path.startsWith("/therapist/")) path = "/therapist.html";
       const file = resolve(root, "." + decodeURIComponent(path));
       if (!file.startsWith(root + sep)) throw new Error("Forbidden");
       await stat(file);
