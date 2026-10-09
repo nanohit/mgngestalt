@@ -124,7 +124,7 @@ export function initShared() {
   if (config.logos[1] && partnerSlot) {
     const img = document.createElement("img");
     img.className = "institutes-logo";
-    img.loading = "lazy";
+    if (partnerSlot.matches(".footer")) img.loading = "lazy";
     img.alt = "ОПП ГП · программа «Московский гештальт институт»";
     img.src = `https://cdn.jsdelivr.net/gh/${config.repository}@${config.assetRef}/public/assets/${config.logos[1]}`;
     img.addEventListener(
