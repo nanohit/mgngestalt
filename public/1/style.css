@@ -1,5 +1,5 @@
 /* Магнитогорское гештальт-сообщество — версия /1
-   Тёплая бумага, разделы в блоках, акварельные мазки на фоне (backdrop.js).
+   Тёплая бумага, разделы в блоках, акварельные венки на фоне (backdrop.js).
    Один мягкий шрифт с засечками для всего сайта; шрифты системные. */
 
 :root {
@@ -70,14 +70,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Холст с мазками лежит под блоками и не двигается при прокрутке. */
+/* Слой с акварельными венками лежит под блоками; при прокрутке венки
+   медленно поворачиваются (backdrop.js меняет только transform). */
 .backdrop {
   position: fixed;
   inset: 0;
   z-index: -1;
-  width: 100%;
   height: 100vh;
   height: 100lvh;
+  overflow: hidden;
   pointer-events: none;
   opacity: 0;
   transition: opacity 1.2s ease;
@@ -85,6 +86,14 @@ body {
 
 .backdrop.ready {
   opacity: 1;
+}
+
+.backdrop canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: center;
+  will-change: transform;
 }
 
 ::selection {
