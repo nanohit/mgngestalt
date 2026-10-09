@@ -1,0 +1,5 @@
+project_id = "uwcvheonmfsibqtcfosw"
+
+[functions.api]
+# Своя авторизация по токену сессии кабинета; ключи Supabase клиенту не нужны.
+verify_jwt = false
