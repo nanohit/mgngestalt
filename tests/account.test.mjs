@@ -225,7 +225,7 @@ test("draft is retained if publication fails; rate limits and maximum accounts h
   assert.ok(r.data.publishError);
   assert.equal(users.get("boris").profile.published, true);
   storageBroken = false;
-  for (let i = 0; i < 29; i++)
+  for (let i = 0; i < 38; i++)
     users.set(
       "filler" + i,
       {
@@ -234,6 +234,15 @@ test("draft is retained if publication fails; rate limits and maximum accounts h
         role: "therapist",
       },
     );
+  assert.equal(
+    (await call("create-account", { login: "fortieth", name: "Сороковой" }, ac))
+      .status,
+    201,
+  );
+  assert.equal(
+    [...users.values()].filter((u) => u.role === "therapist").length,
+    40,
+  );
   assert.equal(
     (await call("create-account", { login: "one-more", name: "Лишний" }, ac))
       .status,

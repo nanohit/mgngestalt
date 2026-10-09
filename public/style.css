@@ -827,7 +827,7 @@ input[type="search"]::-webkit-search-cancel-button {
   margin: 0;
   font-size: 1.0625rem;
   font-weight: 600;
-  color: var(--ink);
+  color: #985035;
 }
 
 .calendar-header h3::first-letter {
