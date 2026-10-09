@@ -16,16 +16,20 @@ let user = null,
   activeTab = "",
   pendingPhoto = null,
   removePhoto = false;
-const TOPICS = [
-  "Отношения",
-  "Тревога",
-  "Самооценка",
-  "Кризисы",
-  "Утрата",
-  "Семья",
-  "Выгорание",
-  "Самопознание",
-];
+// Темы терапевт пишет сам через запятую; сервер проверяет то же самое.
+const parseTopics = (value) => {
+  const seen = new Set();
+  return String(value || "")
+    .split(/[,;\n]/)
+    .map((t) => t.trim().replace(/\s+/g, " "))
+    .filter((t) => {
+      const key = t.toLocaleLowerCase("ru");
+      if (!t || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((t) => t[0].toLocaleUpperCase("ru") + t.slice(1));
+};
 const api = async (action, payload = {}) => {
   const res = await fetch("/api/account", {
     method: "POST",
@@ -203,7 +207,7 @@ function renderProfile(account) {
   pendingPhoto = null;
   removePhoto = false;
   $("#account-content").innerHTML =
-    `<section class="editor">${user.role === "admin" ? '<button class="text-link" id="back-accounts">← К участникам</button>' : ""}<h2>Анкета ${user.role === "admin" ? escape(p.name || account.login) : "терапевта"}</h2><p class="intro">Заполните анкету и укажите контакты для записи.</p><p class="disclosure">Опубликованные сведения и фото видны всем. Указывайте только информацию, которую готовы сделать общедоступной.</p><form id="profile-form"><div class="form-grid"><label class="span-2">Имя и фамилия<input name="name" value="${escape(p.name)}" required maxlength="100" autocomplete="name"></label><label class="span-2">Краткое описание<textarea name="summary" required maxlength="240" rows="2">${escape(p.summary)}</textarea></label><div class="span-2"><span class="field-label">Фотография</span><img id="photo-preview" class="editor-photo" src="${escape(photoUrl(p.photo))}" alt="Предпросмотр фотографии" ${p.photo ? "" : "hidden"}><div class="photo-actions"><input id="photo-file" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Загрузить фотографию"><button class="text-link" type="button" id="remove-photo">Убрать фото</button></div><p class="hint" id="photo-status">JPG, PNG или WebP. Фотография автоматически уменьшится перед отправкой.</p></div><label class="span-2">О себе и работе<textarea name="about" maxlength="5000" rows="7">${escape(p.about)}</textarea></label><label class="span-2">Образование и подготовка<textarea name="education" maxlength="3000" rows="5">${escape(p.education)}</textarea></label><label>Стоимость встречи, ₽<input name="price" type="number" min="0" max="100000" step="1" value="${escape(p.price)}" placeholder="По запросу"></label><label>Продолжительность, минут<input name="duration" type="number" min="15" max="240" step="1" value="${escape(p.duration || 50)}" required></label></div><span class="field-label">Формат встреч</span><div class="check-row"><label><input type="checkbox" name="formats" value="inperson" ${p.formats?.includes("inperson") ? "checked" : ""}>Очно в Магнитогорске</label><label><input type="checkbox" name="formats" value="online" ${p.formats?.includes("online") ? "checked" : ""}>Онлайн</label></div><span class="field-label">С чем вы работаете</span><div class="check-row">${TOPICS.map((t) => `<label><input type="checkbox" name="topics" value="${escape(t)}" ${p.topics?.includes(t) ? "checked" : ""}>${escape(t)}</label>`).join("")}</div><h2>Как с вами связаться</h2><p class="intro">Например: Telegram — https://t.me/username, телефон — tel:+79001234567, почта — mailto:hello@example.ru.</p>${Array.from(
+    `<section class="editor">${user.role === "admin" ? '<button class="text-link" id="back-accounts">← К участникам</button>' : ""}<h2>Анкета ${user.role === "admin" ? escape(p.name || account.login) : "терапевта"}</h2><p class="intro">Заполните анкету и укажите контакты для записи.</p><p class="disclosure">Опубликованные сведения и фото видны всем. Указывайте только информацию, которую готовы сделать общедоступной.</p><form id="profile-form"><div class="form-grid"><label class="span-2">Имя и фамилия<input name="name" value="${escape(p.name)}" required maxlength="100" autocomplete="name"></label><label class="span-2">Краткое описание<textarea name="summary" required maxlength="240" rows="2">${escape(p.summary)}</textarea></label><div class="span-2"><span class="field-label">Фотография</span><img id="photo-preview" class="editor-photo" src="${escape(photoUrl(p.photo))}" alt="Предпросмотр фотографии" ${p.photo ? "" : "hidden"}><div class="photo-actions"><input id="photo-file" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Загрузить фотографию"><button class="text-link" type="button" id="remove-photo">Убрать фото</button></div><p class="hint" id="photo-status">JPG, PNG или WebP. Фотография автоматически уменьшится перед отправкой.</p></div><label class="span-2">О себе и работе<textarea name="about" maxlength="5000" rows="7">${escape(p.about)}</textarea></label><label class="span-2">Образование и подготовка<textarea name="education" maxlength="3000" rows="5">${escape(p.education)}</textarea></label><label>Стоимость встречи, ₽<input name="price" type="number" min="0" max="100000" step="1" value="${escape(p.price)}" placeholder="По запросу"></label><label>Продолжительность, минут<input name="duration" type="number" min="15" max="240" step="1" value="${escape(p.duration || 50)}" required></label></div><span class="field-label">Формат встреч</span><div class="check-row"><label><input type="checkbox" name="formats" value="inperson" ${p.formats?.includes("inperson") ? "checked" : ""}>Очно в Магнитогорске</label><label><input type="checkbox" name="formats" value="online" ${p.formats?.includes("online") ? "checked" : ""}>Онлайн</label></div><label>С чем вы работаете<input name="topics" id="topics-input" value="${escape((p.topics || []).join(", "))}" maxlength="600" autocomplete="off" placeholder="Например: тревога, отношения, выгорание"></label><p class="hint">Необязательно. Через запятую, до 12 тем — они появятся в анкете и в фильтре каталога.</p><div class="tags" id="topics-preview" aria-hidden="true"></div><h2>Как с вами связаться</h2><p class="intro">Например: Telegram — https://t.me/username, телефон — tel:+79001234567, почта — mailto:hello@example.ru.</p>${Array.from(
       { length: 4 },
       (_, i) => {
         const c = p.contacts?.[i] || {};
@@ -213,6 +217,13 @@ function renderProfile(account) {
       "",
     )}<div class="check-row"><label><input type="checkbox" name="published" ${p.published ? "checked" : ""}>Показать профиль в каталоге</label></div><p class="hint">Для публикации нужен хотя бы один контакт. Обновления могут появляться с небольшой задержкой.</p><div class="save-row"><button class="button" type="submit">Сохранить профиль</button><p class="form-status" role="status" aria-live="polite"></p></div>${p.published ? `<p class="footer-note"><a class="inline-link" href="${base}/therapist/${encodeURIComponent(account.id)}" target="_blank" rel="noopener">Посмотреть публичный профиль</a></p>` : ""}</form></section>`;
   $("#back-accounts")?.addEventListener("click", () => selectTab("accounts"));
+  const previewTopics = () => {
+    $("#topics-preview").innerHTML = parseTopics($("#topics-input").value)
+      .map((t) => `<span class="tag">${escape(t)}</span>`)
+      .join("");
+  };
+  $("#topics-input").addEventListener("input", previewTopics);
+  previewTopics();
   $("#remove-photo").addEventListener("click", () => {
     pendingPhoto = null;
     removePhoto = true;
@@ -295,7 +306,7 @@ function renderProfile(account) {
         education: f.get("education"),
         price: f.get("price"),
         duration: f.get("duration"),
-        topics: f.getAll("topics"),
+        topics: parseTopics(f.get("topics")),
         formats: f.getAll("formats"),
         published: f.has("published"),
         contacts,

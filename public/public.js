@@ -46,7 +46,8 @@ function renderTherapists() {
           .toLocaleLowerCase("ru")
           .includes(q)) &&
       (!format || p.formats?.includes(format)) &&
-      (!topic || p.topics?.includes(topic)),
+      (!topic ||
+        p.topics?.some((t) => t.toLocaleLowerCase("ru") === topic)),
   );
   $("#results-label").textContent = all.length
     ? `Специалистов: ${people.length}${people.length !== all.length ? ` из ${all.length}` : ""}`
@@ -68,6 +69,22 @@ function renderTherapists() {
     renderTherapists();
   });
   installImageFallbacks($("#therapist-grid"));
+}
+// Темы в фильтре — только те, что терапевты сами указали в опубликованных анкетах.
+function renderTopics() {
+  const topics = new Map();
+  for (const p of site.therapists.filter((p) => p.published))
+    for (const t of p.topics || []) {
+      const key = t.toLocaleLowerCase("ru");
+      if (!topics.has(key)) topics.set(key, t);
+    }
+  const sorted = [...topics].sort((a, b) => a[1].localeCompare(b[1], "ru"));
+  $("#topic").innerHTML =
+    '<option value="">Любая</option>' +
+    sorted
+      .map(([key, t]) => `<option value="${escape(key)}">${escape(t)}</option>`)
+      .join("");
+  $("#topic").closest("label").hidden = !sorted.length;
 }
 function changeMonth(step) {
   month += step;
@@ -152,6 +169,7 @@ try {
     $("#community-contact").target = "_blank";
     $("#community-contact").rel = "noopener noreferrer";
   }
+  renderTopics();
   renderTherapists();
   renderCalendar();
 } catch (e) {

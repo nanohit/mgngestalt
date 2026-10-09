@@ -303,6 +303,21 @@ test("published profiles require contacts, IDs and roles cannot come from input"
   assert.equal(safe.id, "server-id");
   assert.equal(safe.role, undefined);
 });
+test("topics are free text, optional, trimmed and de-duplicated", () => {
+  const p = { name: "Test", summary: "Summary", formats: ["online"] };
+  assert.deepEqual(profileInput(p, "id").topics, []);
+  assert.deepEqual(
+    profileInput(
+      { ...p, topics: ["  тревога ", "Тревога", "ПТСР", "отношения   в паре", ""] },
+      "id",
+    ).topics,
+    ["Тревога", "ПТСР", "Отношения в паре"],
+  );
+  const many = Array.from({ length: 13 }, (_, i) => `тема ${i}`);
+  assert.throws(() => profileInput({ ...p, topics: many }, "id"));
+  assert.throws(() => profileInput({ ...p, topics: ["x".repeat(41)] }, "id"));
+  assert.throws(() => profileInput({ ...p, topics: "тревога" }, "id"));
+});
 test.after(() => {
   globalThis.fetch = realFetch;
 });
