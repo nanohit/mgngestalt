@@ -1781,13 +1781,33 @@ input[type="file"]::file-selector-button {
     padding: 0 0.5rem 0 0.25rem;
   }
 
+  /* Пункты меню по центру между краем и кнопкой входа, через тонкие палочки. */
   .main-nav {
+    flex: 1;
     gap: 0;
+    justify-content: center;
+    justify-content: safe center;
+  }
+
+  .main-nav a {
+    position: relative;
+  }
+
+  .main-nav a + a::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 1px;
+    height: 1.1em;
+    background: var(--line-strong);
+    transform: translateY(-50%);
   }
 
   /* Подпись остаётся для экранного диктора, на узком экране видна иконка. */
   .header-login {
     justify-content: center;
+    gap: 0;
     width: 2.375rem;
     height: 2.375rem;
     min-height: 0;
@@ -1980,6 +2000,13 @@ input[type="file"]::file-selector-button {
 
   .profile-sidebar .portrait {
     width: 5.75rem;
+  }
+}
+
+/* На широких телефонах пунктам меню хватает места на воздух вокруг палочек. */
+@media (min-width: 410px) and (max-width: 640px) {
+  .main-nav a {
+    padding-inline: 0.625rem;
   }
 }
 
