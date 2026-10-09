@@ -29,12 +29,12 @@
 2. Создайте [fine-grained token GitHub](https://github.com/settings/personal-access-tokens/new): Resource owner `nanohit`, **Only select repositories → mgngestalt**, **Contents → Read and write**. Настройте срок действия и обновляйте токен до истечения. Не используйте персональный токен с доступом ко всем репозиториям.
 3. В [Production environment проекта Vercel](https://vercel.com/vfeb8c02646d6999bcd7afce8/mgngestalt/settings/environment-variables) добавьте как Secret:
 
-| Переменная | Значение |
-|---|---|
-| `UPSTASH_REDIS_REST_URL` | REST URL вашей базы |
+| Переменная                 | Значение                            |
+| -------------------------- | ----------------------------------- |
+| `UPSTASH_REDIS_REST_URL`   | REST URL вашей базы                 |
 | `UPSTASH_REDIS_REST_TOKEN` | REST Token вашей базы, не Read Only |
-| `GITHUB_CONTENT_TOKEN` | Ограниченный токен из шага 2 |
-| `ADMIN_PASSWORD_HASH` | Хеш первого пароля администратора |
+| `GITHUB_CONTENT_TOKEN`     | Ограниченный токен из шага 2        |
+| `ADMIN_PASSWORD_HASH`      | Хеш первого пароля администратора   |
 
 `GITHUB_REPOSITORY` по умолчанию `nanohit/mgngestalt`, `CONTENT_BRANCH` — `content`, `ADMIN_LOGIN` — `admin`. Для других адресов можно задать `SITE_ORIGIN` с точным origin без завершающего `/`. Если он не задан, проверяется HTTPS origin текущего хоста. Секреты не нужны в браузере и не должны попадать в `public/` или Git.
 

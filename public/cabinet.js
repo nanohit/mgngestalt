@@ -1,78 +1,517 @@
-import { $, $$, escape, initShared, toast, photoUrl, eventDate, eventTime } from './core.js';
+import {
+  $,
+  $$,
+  escape,
+  initShared,
+  toast,
+  photoUrl,
+  eventDate,
+  eventTime,
+} from "./core.js";
 initShared();
-let user=null,accounts=[],content=null,activeTab='',pendingPhoto=null,removePhoto=false;
-const TOPICS=['Отношения','Тревога','Самооценка','Кризисы','Утрата','Семья','Выгорание','Самопознание'];
-const api=async(action,payload={})=>{
- const res=await fetch('/api/account',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...payload}),signal:AbortSignal.timeout(65000)});
- let data;try{data=await res.json();}catch{throw new Error('Сервис временно недоступен. Попробуйте позже.');}
- if(!res.ok){if(res.status===401&&action!=='login'){user=null;showLogin();}throw new Error(data.error||'Не удалось выполнить действие.');}return data;
+let user = null,
+  accounts = [],
+  content = null,
+  activeTab = "",
+  pendingPhoto = null,
+  removePhoto = false;
+const TOPICS = [
+  "Отношения",
+  "Тревога",
+  "Самооценка",
+  "Кризисы",
+  "Утрата",
+  "Семья",
+  "Выгорание",
+  "Самопознание",
+];
+const api = async (action, payload = {}) => {
+  const res = await fetch("/api/account", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, ...payload }),
+    signal: AbortSignal.timeout(65000),
+  });
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error("Сервис временно недоступен. Попробуйте позже.");
+  }
+  if (!res.ok) {
+    if (res.status === 401 && action !== "login") {
+      user = null;
+      showLogin();
+    }
+    throw new Error(data.error || "Не удалось выполнить действие.");
+  }
+  return data;
 };
-function bindPasswordToggles(root=document){$$('[data-password]',root).forEach(b=>b.addEventListener('click',()=>{const i=$('#'+b.dataset.password);const show=i.type==='password';i.type=show?'text':'password';b.textContent=show?'Скрыть':'Показать';b.setAttribute('aria-label',show?'Скрыть пароль':'Показать пароль');}));}
+function bindPasswordToggles(root = document) {
+  $$("[data-password]", root).forEach((b) =>
+    b.addEventListener("click", () => {
+      const i = $("#" + b.dataset.password);
+      const show = i.type === "password";
+      i.type = show ? "text" : "password";
+      b.textContent = show ? "Скрыть" : "Показать";
+      b.setAttribute("aria-label", show ? "Скрыть пароль" : "Показать пароль");
+    }),
+  );
+}
 bindPasswordToggles();
-async function submit(form,work){const button=$('button[type=submit]',form),status=$('.form-status',form);button.disabled=true;if(status){status.textContent='';status.classList.remove('success');}try{await work();}catch(e){if(status)status.textContent=e.name==='TimeoutError'?'Сохранение заняло больше времени. Обновите раздел и проверьте результат.':e.message;else toast(e.message);}finally{button.disabled=false;}}
-$('#login-form').addEventListener('submit',e=>{e.preventDefault();submit(e.target,async()=>{const data=new FormData(e.target);const result=await api('login',{login:data.get('login'),password:data.get('password')});e.target.reset();user=result.user;showAccount();});});
-$('#logout').addEventListener('click',async()=>{try{await api('logout');user=null;showLogin();}catch(e){toast(e.message);}});
-function showLogin(){ $('#login-view').hidden=false;$('#account-view').hidden=true;$('#account-content').innerHTML='';$('#account-tabs').innerHTML='';accounts=[];content=null; }
-function showAccount(){
- $('#login-view').hidden=true;$('#account-view').hidden=false;$('#account-role').textContent=user.role==='admin'?'Администратор сообщества':'Личный кабинет';$('#account-title').textContent=user.role==='admin'?'Всё под рукой.':user.profile?.name||'Ваш кабинет';$('#first-password-notice').hidden=!user.mustChange;
- const tabs=user.role==='admin'?[['accounts','Участники'],['events','Календарь'],['settings','О сообществе'],['password','Пароль']]:[['profile','Мой профиль'],['password','Пароль']];
- $('#account-tabs').innerHTML=tabs.map(([id,label])=>`<button type="button" data-tab="${id}">${label}</button>`).join('');$$('[data-tab]').forEach(b=>b.addEventListener('click',()=>selectTab(b.dataset.tab)));selectTab(user.mustChange?'password':tabs[0][0]);
+async function submit(form, work) {
+  const button = $("button[type=submit]", form),
+    status = $(".form-status", form);
+  button.disabled = true;
+  if (status) {
+    status.textContent = "";
+    status.classList.remove("success");
+  }
+  try {
+    await work();
+  } catch (e) {
+    if (status)
+      status.textContent =
+        e.name === "TimeoutError"
+          ? "Сохранение заняло больше времени. Обновите раздел и проверьте результат."
+          : e.message;
+    else toast(e.message);
+  } finally {
+    button.disabled = false;
+  }
 }
-async function selectTab(tab){
- if(user.mustChange&&tab!=='password'){toast('Сначала задайте свой пароль.');return;}
- activeTab=tab;$$('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));$('#account-content').innerHTML='<p class="muted" role="status">Открываем раздел…</p>';
- try{
-  if(tab==='password')renderPassword();
-  if(tab==='profile')renderProfile(user);
-  if(tab==='accounts'){accounts=(await api('list-accounts')).accounts;if(activeTab===tab)renderAccounts();}
-  if(tab==='events'||tab==='settings'){content=(await api('admin-content')).site;if(activeTab===tab){if(tab==='events')renderEvents();else renderSettings();}}
- }catch(e){if(activeTab===tab)$('#account-content').innerHTML=`<div class="error-message">${escape(e.message)} <button class="text-link" id="retry-tab">Повторить ↗</button></div>`;$('#retry-tab')?.addEventListener('click',()=>selectTab(tab));}
+$("#login-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  submit(e.target, async () => {
+    const data = new FormData(e.target);
+    const result = await api("login", {
+      login: data.get("login"),
+      password: data.get("password"),
+    });
+    e.target.reset();
+    user = result.user;
+    showAccount();
+  });
+});
+$("#logout").addEventListener("click", async () => {
+  try {
+    await api("logout");
+    user = null;
+    showLogin();
+  } catch (e) {
+    toast(e.message);
+  }
+});
+function showLogin() {
+  $("#login-view").hidden = false;
+  $("#account-view").hidden = true;
+  $("#account-content").innerHTML = "";
+  $("#account-tabs").innerHTML = "";
+  accounts = [];
+  content = null;
 }
-function renderPassword(){
- $('#account-content').innerHTML=`<section class="editor"><h2>${user.mustChange?'Ваш новый пароль':'Изменить пароль'}</h2><p class="intro">Используйте не меньше 12 символов. После смены пароля остальные сеансы завершатся.</p><form id="password-form"><label>Текущий пароль<input type="password" name="currentPassword" autocomplete="current-password" required maxlength="128"></label><label>Новый пароль<span class="password-field"><input type="password" id="new-password" name="newPassword" autocomplete="new-password" required minlength="12" maxlength="128"><button type="button" class="password-toggle" data-password="new-password" aria-label="Показать пароль">Показать</button></span></label><label>Повторите новый пароль<input type="password" name="repeat" autocomplete="new-password" required minlength="12" maxlength="128"></label><div class="save-row"><button class="button" type="submit">Сохранить пароль ↗</button><p class="form-status" role="status"></p></div></form></section>`;
- bindPasswordToggles($('#account-content'));$('#password-form').addEventListener('submit',e=>{e.preventDefault();submit(e.target,async()=>{const f=new FormData(e.target);if(f.get('newPassword')!==f.get('repeat'))throw new Error('Новые пароли не совпадают.');user=(await api('change-password',{currentPassword:f.get('currentPassword'),newPassword:f.get('newPassword')})).user;toast('Пароль изменён.');showAccount();});});
+function showAccount() {
+  $("#login-view").hidden = true;
+  $("#account-view").hidden = false;
+  $("#account-role").textContent =
+    user.role === "admin" ? "Администратор сообщества" : "Личный кабинет";
+  $("#account-title").textContent =
+    user.role === "admin"
+      ? "Всё под рукой."
+      : user.profile?.name || "Ваш кабинет";
+  $("#first-password-notice").hidden = !user.mustChange;
+  const tabs =
+    user.role === "admin"
+      ? [
+          ["accounts", "Участники"],
+          ["events", "Календарь"],
+          ["settings", "О сообществе"],
+          ["password", "Пароль"],
+        ]
+      : [
+          ["profile", "Мой профиль"],
+          ["password", "Пароль"],
+        ];
+  $("#account-tabs").innerHTML = tabs
+    .map(
+      ([id, label]) =>
+        `<button type="button" data-tab="${id}">${label}</button>`,
+    )
+    .join("");
+  $$("[data-tab]").forEach((b) =>
+    b.addEventListener("click", () => selectTab(b.dataset.tab)),
+  );
+  selectTab(user.mustChange ? "password" : tabs[0][0]);
 }
-function renderProfile(account){
- const p=account.profile||{};pendingPhoto=null;removePhoto=false;
- $('#account-content').innerHTML=`<section class="editor">${user.role==='admin'?'<button class="text-link" id="back-accounts">← К участникам</button>':''}<h2>Профиль ${user.role==='admin'?escape(p.name||account.login):'для знакомства'}</h2><p class="intro">Расскажите о себе так, как вы рассказываете при первой встрече.</p><p class="disclosure">Опубликованные сведения и фото видны всем. Указывайте только информацию, которую готовы сделать общедоступной.</p><form id="profile-form"><div class="form-grid"><label class="span-2">Имя и фамилия<input name="name" value="${escape(p.name)}" required maxlength="100" autocomplete="name"></label><label class="span-2">Коротко о вашем подходе<textarea name="summary" required maxlength="240" rows="2">${escape(p.summary)}</textarea></label><div class="span-2"><span class="field-label">Фотография</span><img id="photo-preview" class="editor-photo" src="${escape(photoUrl(p.photo))}" alt="Предпросмотр фотографии" ${p.photo?'':'hidden'}><div class="photo-actions"><input id="photo-file" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Загрузить фотографию"><button class="text-link" type="button" id="remove-photo">Убрать фото</button></div><p class="hint" id="photo-status">JPG, PNG или WebP. Фотография автоматически уменьшится перед отправкой.</p></div><label class="span-2">О себе и работе<textarea name="about" maxlength="5000" rows="7">${escape(p.about)}</textarea></label><label class="span-2">Образование и подготовка<textarea name="education" maxlength="3000" rows="5">${escape(p.education)}</textarea></label><label>Стоимость встречи, ₽<input name="price" type="number" min="0" max="100000" step="1" value="${escape(p.price)}" placeholder="По запросу"></label><label>Продолжительность, минут<input name="duration" type="number" min="15" max="240" step="1" value="${escape(p.duration||50)}" required></label></div><span class="field-label">Формат встреч</span><div class="check-row"><label><input type="checkbox" name="formats" value="inperson" ${p.formats?.includes('inperson')?'checked':''}>Лично в Магнитогорске</label><label><input type="checkbox" name="formats" value="online" ${p.formats?.includes('online')?'checked':''}>Онлайн</label></div><span class="field-label">С чем вы работаете</span><div class="check-row">${TOPICS.map(t=>`<label><input type="checkbox" name="topics" value="${escape(t)}" ${p.topics?.includes(t)?'checked':''}>${escape(t)}</label>`).join('')}</div><h2>Как с вами связаться</h2><p class="intro">Например: Telegram — https://t.me/username, телефон — tel:+79001234567, почта — mailto:hello@example.ru.</p>${Array.from({length:4},(_,i)=>{const c=p.contacts?.[i]||{};return `<div class="contact-inputs"><label>Название контакта ${i+1}<input name="contactLabel${i}" maxlength="60" value="${escape(c.label)}" placeholder="Например, Telegram"></label><label>Ссылка или телефон<input name="contactUrl${i}" maxlength="500" value="${escape(c.url)}" placeholder="https://t.me/…"></label></div>`;}).join('')}<div class="check-row"><label><input type="checkbox" name="published" ${p.published?'checked':''}>Показать профиль в каталоге</label></div><p class="hint">Для публикации нужен хотя бы один контакт. Обновления могут появляться с небольшой задержкой.</p><div class="save-row"><button class="button" type="submit">Сохранить профиль ↗</button><p class="form-status" role="status" aria-live="polite"></p></div>${p.published?`<p class="footer-note"><a class="inline-link" href="/therapist/${encodeURIComponent(account.id)}" target="_blank" rel="noopener">Посмотреть публичный профиль ↗</a></p>`:''}</form></section>`;
- $('#back-accounts')?.addEventListener('click',()=>selectTab('accounts'));
- $('#remove-photo').addEventListener('click',()=>{pendingPhoto=null;removePhoto=true;$('#photo-preview').hidden=true;$('#photo-file').value='';$('#photo-status').textContent='Фото будет убрано после сохранения.';});
- $('#photo-file').addEventListener('change',async e=>{
-  const file=e.target.files[0];if(!file)return;const save=$('#profile-form button[type=submit]');save.disabled=true;
-  try{if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>10000000)throw new Error('Выберите JPG, PNG или WebP размером до 10 МБ.');$('#photo-status').textContent='Подготавливаем фотографию…';const image=await createImageBitmap(file);if(image.width*image.height>50000000){image.close();throw new Error('Фотография слишком большая. Уменьшите её перед загрузкой.');}const scale=Math.min(1,720/Math.max(image.width,image.height)),canvas=document.createElement('canvas');canvas.width=Math.round(image.width*scale);canvas.height=Math.round(image.height*scale);canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);image.close();let blob;for(const quality of [.85,.75,.65,.5]){blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',quality));if(blob?.size<=180000)break;}if(!blob||blob.type!=='image/webp'||blob.size>180000)throw new Error('Не получилось сжать фото. Попробуйте другой файл.');pendingPhoto=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=reject;reader.readAsDataURL(blob);});removePhoto=false;const preview=$('#photo-preview');if(preview.dataset.objectUrl)URL.revokeObjectURL(preview.dataset.objectUrl);preview.src=URL.createObjectURL(blob);preview.dataset.objectUrl=preview.src;preview.hidden=false;$('#photo-status').textContent=`Готово: ${Math.round(blob.size/1024)} КБ. Сохраните профиль, чтобы загрузить фото.`;}catch(err){pendingPhoto=null;e.target.value='';$('#photo-status').textContent=err.message;}finally{save.disabled=false;}
- });
- $('#profile-form').addEventListener('submit',e=>{e.preventDefault();submit(e.target,async()=>{
-  const f=new FormData(e.target),contacts=Array.from({length:4},(_,i)=>({label:f.get(`contactLabel${i}`),url:f.get(`contactUrl${i}`)})).filter(c=>c.url);
-  const profile={...p,name:f.get('name'),summary:f.get('summary'),about:f.get('about'),education:f.get('education'),price:f.get('price'),duration:f.get('duration'),topics:f.getAll('topics'),formats:f.getAll('formats'),published:f.has('published'),contacts,photo:p.photo||''};
-  const result=await api('save-profile',{login:account.login,revision:account.revision,profile,photo:pendingPhoto,removePhoto});Object.assign(account,result.user);if(user.id===account.id)user=result.user;
-  renderProfile(account);const status=$('#profile-form .form-status');if(result.publishError){status.textContent=result.publishError;}else{status.classList.add('success');status.textContent=result.publication?.delayed?'Сохранено. Публикация обновится после обновления кэша.':'Профиль сохранён. Обновление каталога может занять немного времени.';toast('Профиль сохранён.');}
- });});
+async function selectTab(tab) {
+  if (user.mustChange && tab !== "password") {
+    toast("Сначала задайте свой пароль.");
+    return;
+  }
+  activeTab = tab;
+  $$("[data-tab]").forEach((b) =>
+    b.classList.toggle("active", b.dataset.tab === tab),
+  );
+  $("#account-content").innerHTML =
+    '<p class="muted" role="status">Открываем раздел…</p>';
+  try {
+    if (tab === "password") renderPassword();
+    if (tab === "profile") renderProfile(user);
+    if (tab === "accounts") {
+      accounts = (await api("list-accounts")).accounts;
+      if (activeTab === tab) renderAccounts();
+    }
+    if (tab === "events" || tab === "settings") {
+      content = (await api("admin-content")).site;
+      if (activeTab === tab) {
+        if (tab === "events") renderEvents();
+        else renderSettings();
+      }
+    }
+  } catch (e) {
+    if (activeTab === tab)
+      $("#account-content").innerHTML =
+        `<div class="error-message">${escape(e.message)} <button class="text-link" id="retry-tab">Повторить ↗</button></div>`;
+    $("#retry-tab")?.addEventListener("click", () => selectTab(tab));
+  }
 }
-function renderAccounts(){
- $('#account-content').innerHTML=`<section class="account-list"><div class="list-heading"><h2>Участники <span class="muted">${accounts.length}/30</span></h2><button class="button" id="create-account" ${accounts.length>=30?'disabled':''}>Добавить участника ↗</button></div><p class="disclosure">Выдайте логин и временный пароль лично. При первом входе участник задаст свой пароль.</p>${accounts.length?accounts.map(a=>`<article class="account-row"><div><h3>${escape(a.profile?.name||a.login)}</h3><p>${escape(a.login)} · ${a.profile?.published?'В каталоге':'Черновик'}${a.mustChange?' · Временный пароль':''}</p></div><div class="row-actions"><button class="button secondary" data-edit="${escape(a.id)}">Профиль</button><button class="button secondary" data-reset="${escape(a.id)}">Сбросить пароль</button><button class="button secondary" data-delete="${escape(a.id)}">Удалить</button></div></article>`).join(''):'<p class="notice">Добавьте первого участника — его профиль появится после заполнения и публикации.</p>'}</section>`;
- $('#create-account').addEventListener('click',openCreate);$$('[data-edit]').forEach(b=>b.addEventListener('click',()=>renderProfile(accounts.find(a=>a.id===b.dataset.edit))));$$('[data-reset]').forEach(b=>b.addEventListener('click',()=>confirmAccount(accounts.find(a=>a.id===b.dataset.reset),'reset')));$$('[data-delete]').forEach(b=>b.addEventListener('click',()=>confirmAccount(accounts.find(a=>a.id===b.dataset.delete),'delete')));
+function renderPassword() {
+  $("#account-content").innerHTML =
+    `<section class="editor"><h2>${user.mustChange ? "Ваш новый пароль" : "Изменить пароль"}</h2><p class="intro">Используйте не меньше 12 символов. После смены пароля остальные сеансы завершатся.</p><form id="password-form"><label>Текущий пароль<input type="password" name="currentPassword" autocomplete="current-password" required maxlength="128"></label><label>Новый пароль<span class="password-field"><input type="password" id="new-password" name="newPassword" autocomplete="new-password" required minlength="12" maxlength="128"><button type="button" class="password-toggle" data-password="new-password" aria-label="Показать пароль">Показать</button></span></label><label>Повторите новый пароль<input type="password" name="repeat" autocomplete="new-password" required minlength="12" maxlength="128"></label><div class="save-row"><button class="button" type="submit">Сохранить пароль ↗</button><p class="form-status" role="status"></p></div></form></section>`;
+  bindPasswordToggles($("#account-content"));
+  $("#password-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    submit(e.target, async () => {
+      const f = new FormData(e.target);
+      if (f.get("newPassword") !== f.get("repeat"))
+        throw new Error("Новые пароли не совпадают.");
+      user = (
+        await api("change-password", {
+          currentPassword: f.get("currentPassword"),
+          newPassword: f.get("newPassword"),
+        })
+      ).user;
+      toast("Пароль изменён.");
+      showAccount();
+    });
+  });
 }
-function openDialog(html){$('#account-dialog-content').innerHTML=html;$('#account-dialog').showModal();}
-function showCredentials(login,tempPassword){$('#account-dialog-content').innerHTML=`<h2>Кабинет готов.</h2><p>Передайте участнику эти данные лично. Временный пароль показывается сейчас; позже можно выдать новый.</p><div class="credentials"><p>Логин: <code>${escape(login)}</code></p><p>Пароль: <code>${escape(tempPassword)}</code></p><p>Страница входа: ${escape(location.origin)}/cabinet</p><button class="button secondary" id="copy-credentials">Скопировать данные</button></div>`;$('#copy-credentials').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(`Личный кабинет: ${location.origin}/cabinet\nЛогин: ${login}\nВременный пароль: ${tempPassword}\nПри первом входе задайте свой пароль.`);toast('Данные скопированы.');}catch{toast('Выделите и скопируйте данные вручную.');}});}
-function openCreate(){openDialog('<h2>Новый участник</h2><form id="create-form"><label>Имя и фамилия<input name="name" required maxlength="100"></label><label>Логин<input name="login" required pattern="[a-z0-9][a-z0-9._-]{2,39}" minlength="3" maxlength="40" autocapitalize="none" spellcheck="false"></label><p class="hint">Латинские буквы и цифры, не меньше 3 символов.</p><button class="button" type="submit">Создать кабинет ↗</button><p class="form-status" role="status"></p></form>');$('#create-form').addEventListener('submit',e=>{e.preventDefault();submit(e.target,async()=>{const f=new FormData(e.target),result=await api('create-account',{name:f.get('name'),login:f.get('login')});accounts.push(result.account);renderAccounts();showCredentials(result.account.login,result.tempPassword);});});}
-function confirmAccount(account,action){
- const deleting=action==='delete';openDialog(`<h2>${deleting?'Удалить участника?':'Выдать новый пароль?'}</h2><p>${escape(account.profile?.name||account.login)} · ${escape(account.login)}</p><p>${deleting?'Кабинет и профиль будут удалены из каталога.':'Прежний пароль перестанет работать, а текущие сеансы завершатся.'}</p><form id="confirm-form"><button type="submit" class="button ${deleting?'danger':''}">${deleting?'Удалить кабинет':'Сбросить пароль'} ↗</button><p class="form-status" role="status"></p></form>`);
- $('#confirm-form').addEventListener('submit',e=>{e.preventDefault();submit(e.target,async()=>{const result=await api(deleting?'delete-account':'reset-password',{login:account.login});if(deleting){accounts=accounts.filter(a=>a.id!==account.id);renderAccounts();$('#account-dialog').close();toast('Кабинет удалён.');}else{account.mustChange=true;renderAccounts();showCredentials(account.login,result.tempPassword);}});});
+function renderProfile(account) {
+  const p = account.profile || {};
+  pendingPhoto = null;
+  removePhoto = false;
+  $("#account-content").innerHTML =
+    `<section class="editor">${user.role === "admin" ? '<button class="text-link" id="back-accounts">← К участникам</button>' : ""}<h2>Профиль ${user.role === "admin" ? escape(p.name || account.login) : "для знакомства"}</h2><p class="intro">Расскажите о себе так, как вы рассказываете при первой встрече.</p><p class="disclosure">Опубликованные сведения и фото видны всем. Указывайте только информацию, которую готовы сделать общедоступной.</p><form id="profile-form"><div class="form-grid"><label class="span-2">Имя и фамилия<input name="name" value="${escape(p.name)}" required maxlength="100" autocomplete="name"></label><label class="span-2">Коротко о вашем подходе<textarea name="summary" required maxlength="240" rows="2">${escape(p.summary)}</textarea></label><div class="span-2"><span class="field-label">Фотография</span><img id="photo-preview" class="editor-photo" src="${escape(photoUrl(p.photo))}" alt="Предпросмотр фотографии" ${p.photo ? "" : "hidden"}><div class="photo-actions"><input id="photo-file" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Загрузить фотографию"><button class="text-link" type="button" id="remove-photo">Убрать фото</button></div><p class="hint" id="photo-status">JPG, PNG или WebP. Фотография автоматически уменьшится перед отправкой.</p></div><label class="span-2">О себе и работе<textarea name="about" maxlength="5000" rows="7">${escape(p.about)}</textarea></label><label class="span-2">Образование и подготовка<textarea name="education" maxlength="3000" rows="5">${escape(p.education)}</textarea></label><label>Стоимость встречи, ₽<input name="price" type="number" min="0" max="100000" step="1" value="${escape(p.price)}" placeholder="По запросу"></label><label>Продолжительность, минут<input name="duration" type="number" min="15" max="240" step="1" value="${escape(p.duration || 50)}" required></label></div><span class="field-label">Формат встреч</span><div class="check-row"><label><input type="checkbox" name="formats" value="inperson" ${p.formats?.includes("inperson") ? "checked" : ""}>Лично в Магнитогорске</label><label><input type="checkbox" name="formats" value="online" ${p.formats?.includes("online") ? "checked" : ""}>Онлайн</label></div><span class="field-label">С чем вы работаете</span><div class="check-row">${TOPICS.map((t) => `<label><input type="checkbox" name="topics" value="${escape(t)}" ${p.topics?.includes(t) ? "checked" : ""}>${escape(t)}</label>`).join("")}</div><h2>Как с вами связаться</h2><p class="intro">Например: Telegram — https://t.me/username, телефон — tel:+79001234567, почта — mailto:hello@example.ru.</p>${Array.from(
+      { length: 4 },
+      (_, i) => {
+        const c = p.contacts?.[i] || {};
+        return `<div class="contact-inputs"><label>Название контакта ${i + 1}<input name="contactLabel${i}" maxlength="60" value="${escape(c.label)}" placeholder="Например, Telegram"></label><label>Ссылка или телефон<input name="contactUrl${i}" maxlength="500" value="${escape(c.url)}" placeholder="https://t.me/…"></label></div>`;
+      },
+    ).join(
+      "",
+    )}<div class="check-row"><label><input type="checkbox" name="published" ${p.published ? "checked" : ""}>Показать профиль в каталоге</label></div><p class="hint">Для публикации нужен хотя бы один контакт. Обновления могут появляться с небольшой задержкой.</p><div class="save-row"><button class="button" type="submit">Сохранить профиль ↗</button><p class="form-status" role="status" aria-live="polite"></p></div>${p.published ? `<p class="footer-note"><a class="inline-link" href="/therapist/${encodeURIComponent(account.id)}" target="_blank" rel="noopener">Посмотреть публичный профиль ↗</a></p>` : ""}</form></section>`;
+  $("#back-accounts")?.addEventListener("click", () => selectTab("accounts"));
+  $("#remove-photo").addEventListener("click", () => {
+    pendingPhoto = null;
+    removePhoto = true;
+    $("#photo-preview").hidden = true;
+    $("#photo-file").value = "";
+    $("#photo-status").textContent = "Фото будет убрано после сохранения.";
+  });
+  $("#photo-file").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const save = $("#profile-form button[type=submit]");
+    save.disabled = true;
+    try {
+      if (
+        !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+        file.size > 10000000
+      )
+        throw new Error("Выберите JPG, PNG или WebP размером до 10 МБ.");
+      $("#photo-status").textContent = "Подготавливаем фотографию…";
+      const image = await createImageBitmap(file);
+      if (image.width * image.height > 50000000) {
+        image.close();
+        throw new Error(
+          "Фотография слишком большая. Уменьшите её перед загрузкой.",
+        );
+      }
+      const scale = Math.min(1, 720 / Math.max(image.width, image.height)),
+        canvas = document.createElement("canvas");
+      canvas.width = Math.round(image.width * scale);
+      canvas.height = Math.round(image.height * scale);
+      canvas
+        .getContext("2d")
+        .drawImage(image, 0, 0, canvas.width, canvas.height);
+      image.close();
+      let blob;
+      for (const quality of [0.85, 0.75, 0.65, 0.5]) {
+        blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/webp", quality),
+        );
+        if (blob?.size <= 180000) break;
+      }
+      if (!blob || blob.type !== "image/webp" || blob.size > 180000)
+        throw new Error("Не получилось сжать фото. Попробуйте другой файл.");
+      pendingPhoto = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      removePhoto = false;
+      const preview = $("#photo-preview");
+      if (preview.dataset.objectUrl)
+        URL.revokeObjectURL(preview.dataset.objectUrl);
+      preview.src = URL.createObjectURL(blob);
+      preview.dataset.objectUrl = preview.src;
+      preview.hidden = false;
+      $("#photo-status").textContent =
+        `Готово: ${Math.round(blob.size / 1024)} КБ. Сохраните профиль, чтобы загрузить фото.`;
+    } catch (err) {
+      pendingPhoto = null;
+      e.target.value = "";
+      $("#photo-status").textContent = err.message;
+    } finally {
+      save.disabled = false;
+    }
+  });
+  $("#profile-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    submit(e.target, async () => {
+      const f = new FormData(e.target),
+        contacts = Array.from({ length: 4 }, (_, i) => ({
+          label: f.get(`contactLabel${i}`),
+          url: f.get(`contactUrl${i}`),
+        })).filter((c) => c.url);
+      const profile = {
+        ...p,
+        name: f.get("name"),
+        summary: f.get("summary"),
+        about: f.get("about"),
+        education: f.get("education"),
+        price: f.get("price"),
+        duration: f.get("duration"),
+        topics: f.getAll("topics"),
+        formats: f.getAll("formats"),
+        published: f.has("published"),
+        contacts,
+        photo: p.photo || "",
+      };
+      const result = await api("save-profile", {
+        login: account.login,
+        revision: account.revision,
+        profile,
+        photo: pendingPhoto,
+        removePhoto,
+      });
+      Object.assign(account, result.user);
+      if (user.id === account.id) user = result.user;
+      renderProfile(account);
+      const status = $("#profile-form .form-status");
+      if (result.publishError) {
+        status.textContent = result.publishError;
+      } else {
+        status.classList.add("success");
+        status.textContent = result.publication?.delayed
+          ? "Сохранено. Публикация обновится после обновления кэша."
+          : "Профиль сохранён. Обновление каталога может занять немного времени.";
+        toast("Профиль сохранён.");
+      }
+    });
+  });
 }
-function renderEvents(){
- const events=[...content.events].sort((a,b)=>new Date(b.startsAt)-new Date(a.startsAt));
- $('#account-content').innerHTML=`<section class="account-list"><div class="list-heading"><h2>События сообщества</h2><button class="button" id="new-event">Добавить событие ↗</button></div><p class="disclosure">Все даты и время — местные, по Магнитогорску (UTC+5).</p>${events.length?events.map(e=>`<article class="account-row"><div><h3>${escape(e.title)}</h3><p>${eventDate(e.startsAt)} · ${eventTime(e.startsAt)} · ${escape(e.location)}</p></div><div class="row-actions"><button class="button secondary" data-event-edit="${escape(e.id)}">Изменить</button><button class="button secondary" data-event-delete="${escape(e.id)}">Удалить</button></div></article>`).join(''):'<p class="notice">Здесь появятся встречи, группы и события сообщества.</p>'}</section>`;
- $('#new-event').addEventListener('click',()=>renderEventEditor());$$('[data-event-edit]').forEach(b=>b.addEventListener('click',()=>renderEventEditor(content.events.find(e=>e.id===b.dataset.eventEdit))));$$('[data-event-delete]').forEach(b=>b.addEventListener('click',()=>deleteEvent(content.events.find(e=>e.id===b.dataset.eventDelete))));
+function renderAccounts() {
+  $("#account-content").innerHTML =
+    `<section class="account-list"><div class="list-heading"><h2>Участники <span class="muted">${accounts.length}/30</span></h2><button class="button" id="create-account" ${accounts.length >= 30 ? "disabled" : ""}>Добавить участника ↗</button></div><p class="disclosure">Выдайте логин и временный пароль лично. При первом входе участник задаст свой пароль.</p>${accounts.length ? accounts.map((a) => `<article class="account-row"><div><h3>${escape(a.profile?.name || a.login)}</h3><p>${escape(a.login)} · ${a.profile?.published ? "В каталоге" : "Черновик"}${a.mustChange ? " · Временный пароль" : ""}</p></div><div class="row-actions"><button class="button secondary" data-edit="${escape(a.id)}">Профиль</button><button class="button secondary" data-reset="${escape(a.id)}">Сбросить пароль</button><button class="button secondary" data-delete="${escape(a.id)}">Удалить</button></div></article>`).join("") : '<p class="notice">Добавьте первого участника — его профиль появится после заполнения и публикации.</p>'}</section>`;
+  $("#create-account").addEventListener("click", openCreate);
+  $$("[data-edit]").forEach((b) =>
+    b.addEventListener("click", () =>
+      renderProfile(accounts.find((a) => a.id === b.dataset.edit)),
+    ),
+  );
+  $$("[data-reset]").forEach((b) =>
+    b.addEventListener("click", () =>
+      confirmAccount(
+        accounts.find((a) => a.id === b.dataset.reset),
+        "reset",
+      ),
+    ),
+  );
+  $$("[data-delete]").forEach((b) =>
+    b.addEventListener("click", () =>
+      confirmAccount(
+        accounts.find((a) => a.id === b.dataset.delete),
+        "delete",
+      ),
+    ),
+  );
 }
-function localDateTime(iso){if(!iso)return '';const d=new Date(new Date(iso).getTime()+5*3600000);return d.toISOString().slice(0,16);}
-function renderEventEditor(event={}){
- $('#account-content').innerHTML=`<section class="editor"><button class="text-link" id="back-events">← К календарю</button><h2>${event.id?'Изменить событие':'Новая встреча'}</h2><form id="event-form"><label>Название<input name="title" required maxlength="120" value="${escape(event.title)}"></label><div class="form-grid"><label>Тип события<input name="type" required maxlength="60" value="${escape(event.type||'Открытая встреча')}"></label><label>Дата и время в Магнитогорске<input name="startsAt" type="datetime-local" required value="${localDateTime(event.startsAt)}"></label><label class="span-2">Адрес или формат<input name="location" required maxlength="200" value="${escape(event.location)}" placeholder="Магнитогорск, адрес или онлайн"></label><label class="span-2">О встрече<textarea name="description" maxlength="5000" rows="7">${escape(event.description)}</textarea></label><label>Стоимость или условия<input name="price" maxlength="80" value="${escape(event.price)}" placeholder="Например, бесплатно"></label><label>Текст кнопки записи<input name="contactLabel" maxlength="60" value="${escape(event.contactLabel)}" placeholder="Записаться на встречу"></label><label class="span-2">Ссылка для записи<input name="contactUrl" maxlength="500" value="${escape(event.contactUrl)}" placeholder="https://t.me/…"></label></div><div class="save-row"><button class="button" type="submit">Опубликовать событие ↗</button><p class="form-status" role="status"></p></div></form></section>`;
- $('#back-events').addEventListener('click',renderEvents);$('#event-form').addEventListener('submit',e=>{e.preventDefault();submit(e.target,async()=>{const f=Object.fromEntries(new FormData(e.target));f.startsAt+=':00+05:00';const result=await api('save-event',{id:event.id,updatedAt:content.updatedAt,event:f});content=result.site;renderEvents();toast('Событие опубликовано. Календарь обновится после обновления кэша.');});});
+function openDialog(html) {
+  $("#account-dialog-content").innerHTML = html;
+  $("#account-dialog").showModal();
 }
-function deleteEvent(event){openDialog(`<h2>Удалить событие?</h2><p>${escape(event.title)}</p><form id="delete-event-form"><button class="button danger" type="submit">Удалить ↗</button><p class="form-status" role="status"></p></form>`);$('#delete-event-form').addEventListener('submit',e=>{e.preventDefault();submit(e.target,async()=>{content=(await api('delete-event',{id:event.id,updatedAt:content.updatedAt})).site;renderEvents();$('#account-dialog').close();toast('Событие удалено.');});});}
-function renderSettings(){const s=content.settings;$('#account-content').innerHTML=`<section class="editor"><h2>О сообществе</h2><p class="intro">Этот текст и контакт видны на главной странице.</p><form id="settings-form"><label>Текст о нас<textarea name="about" required maxlength="3000" rows="7">${escape(s.about)}</textarea></label><label>Название контакта<input name="contactLabel" maxlength="60" value="${escape(s.contactLabel)}" placeholder="Связаться с сообществом"></label><label>Ссылка для связи<input name="contactUrl" maxlength="500" value="${escape(s.contactUrl)}" placeholder="https://t.me/…"></label><div class="save-row"><button class="button" type="submit">Сохранить ↗</button><p class="form-status" role="status"></p></div></form></section>`;$('#settings-form').addEventListener('submit',e=>{e.preventDefault();submit(e.target,async()=>{content=(await api('save-settings',{updatedAt:content.updatedAt,settings:Object.fromEntries(new FormData(e.target))})).site;toast('Изменения сохранены.');$('.form-status',e.target).textContent='Сохранено. Главная страница обновится после обновления кэша.';});});}
-try{
- const status=await fetch('/api/account?action=status',{signal:AbortSignal.timeout(10000)});const info=await status.json();
- if(!info.configured){$('#login-status').textContent='Кабинеты скоро откроются. Администратор завершает подключение.';$('#login-form button[type=submit]').disabled=true;}
- else{const me=await fetch('/api/account',{credentials:'same-origin',signal:AbortSignal.timeout(10000)});if(me.ok){user=(await me.json()).user;showAccount();}}
-}catch{$('#login-status').textContent='Не удалось проверить подключение. Вы можете попробовать войти.';}
+function showCredentials(login, tempPassword) {
+  $("#account-dialog-content").innerHTML =
+    `<h2>Кабинет готов.</h2><p>Передайте участнику эти данные лично. Временный пароль показывается сейчас; позже можно выдать новый.</p><div class="credentials"><p>Логин: <code>${escape(login)}</code></p><p>Пароль: <code>${escape(tempPassword)}</code></p><p>Страница входа: ${escape(location.origin)}/cabinet</p><button class="button secondary" id="copy-credentials">Скопировать данные</button></div>`;
+  $("#copy-credentials").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(
+        `Личный кабинет: ${location.origin}/cabinet\nЛогин: ${login}\nВременный пароль: ${tempPassword}\nПри первом входе задайте свой пароль.`,
+      );
+      toast("Данные скопированы.");
+    } catch {
+      toast("Выделите и скопируйте данные вручную.");
+    }
+  });
+}
+function openCreate() {
+  openDialog(
+    '<h2>Новый участник</h2><form id="create-form"><label>Имя и фамилия<input name="name" required maxlength="100"></label><label>Логин<input name="login" required pattern="[a-z0-9][a-z0-9._-]{2,39}" minlength="3" maxlength="40" autocapitalize="none" spellcheck="false"></label><p class="hint">Латинские буквы и цифры, не меньше 3 символов.</p><button class="button" type="submit">Создать кабинет ↗</button><p class="form-status" role="status"></p></form>',
+  );
+  $("#create-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    submit(e.target, async () => {
+      const f = new FormData(e.target),
+        result = await api("create-account", {
+          name: f.get("name"),
+          login: f.get("login"),
+        });
+      accounts.push(result.account);
+      renderAccounts();
+      showCredentials(result.account.login, result.tempPassword);
+    });
+  });
+}
+function confirmAccount(account, action) {
+  const deleting = action === "delete";
+  openDialog(
+    `<h2>${deleting ? "Удалить участника?" : "Выдать новый пароль?"}</h2><p>${escape(account.profile?.name || account.login)} · ${escape(account.login)}</p><p>${deleting ? "Кабинет и профиль будут удалены из каталога." : "Прежний пароль перестанет работать, а текущие сеансы завершатся."}</p><form id="confirm-form"><button type="submit" class="button ${deleting ? "danger" : ""}">${deleting ? "Удалить кабинет" : "Сбросить пароль"} ↗</button><p class="form-status" role="status"></p></form>`,
+  );
+  $("#confirm-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    submit(e.target, async () => {
+      const result = await api(deleting ? "delete-account" : "reset-password", {
+        login: account.login,
+      });
+      if (deleting) {
+        accounts = accounts.filter((a) => a.id !== account.id);
+        renderAccounts();
+        $("#account-dialog").close();
+        toast("Кабинет удалён.");
+      } else {
+        account.mustChange = true;
+        renderAccounts();
+        showCredentials(account.login, result.tempPassword);
+      }
+    });
+  });
+}
+function renderEvents() {
+  const events = [...content.events].sort(
+    (a, b) => new Date(b.startsAt) - new Date(a.startsAt),
+  );
+  $("#account-content").innerHTML =
+    `<section class="account-list"><div class="list-heading"><h2>События сообщества</h2><button class="button" id="new-event">Добавить событие ↗</button></div><p class="disclosure">Все даты и время — местные, по Магнитогорску (UTC+5).</p>${events.length ? events.map((e) => `<article class="account-row"><div><h3>${escape(e.title)}</h3><p>${eventDate(e.startsAt)} · ${eventTime(e.startsAt)} · ${escape(e.location)}</p></div><div class="row-actions"><button class="button secondary" data-event-edit="${escape(e.id)}">Изменить</button><button class="button secondary" data-event-delete="${escape(e.id)}">Удалить</button></div></article>`).join("") : '<p class="notice">Здесь появятся встречи, группы и события сообщества.</p>'}</section>`;
+  $("#new-event").addEventListener("click", () => renderEventEditor());
+  $$("[data-event-edit]").forEach((b) =>
+    b.addEventListener("click", () =>
+      renderEventEditor(
+        content.events.find((e) => e.id === b.dataset.eventEdit),
+      ),
+    ),
+  );
+  $$("[data-event-delete]").forEach((b) =>
+    b.addEventListener("click", () =>
+      deleteEvent(content.events.find((e) => e.id === b.dataset.eventDelete)),
+    ),
+  );
+}
+function localDateTime(iso) {
+  if (!iso) return "";
+  const d = new Date(new Date(iso).getTime() + 5 * 3600000);
+  return d.toISOString().slice(0, 16);
+}
+function renderEventEditor(event = {}) {
+  $("#account-content").innerHTML =
+    `<section class="editor"><button class="text-link" id="back-events">← К календарю</button><h2>${event.id ? "Изменить событие" : "Новая встреча"}</h2><form id="event-form"><label>Название<input name="title" required maxlength="120" value="${escape(event.title)}"></label><div class="form-grid"><label>Тип события<input name="type" required maxlength="60" value="${escape(event.type || "Открытая встреча")}"></label><label>Дата и время в Магнитогорске<input name="startsAt" type="datetime-local" required value="${localDateTime(event.startsAt)}"></label><label class="span-2">Адрес или формат<input name="location" required maxlength="200" value="${escape(event.location)}" placeholder="Магнитогорск, адрес или онлайн"></label><label class="span-2">О встрече<textarea name="description" maxlength="5000" rows="7">${escape(event.description)}</textarea></label><label>Стоимость или условия<input name="price" maxlength="80" value="${escape(event.price)}" placeholder="Например, бесплатно"></label><label>Текст кнопки записи<input name="contactLabel" maxlength="60" value="${escape(event.contactLabel)}" placeholder="Записаться на встречу"></label><label class="span-2">Ссылка для записи<input name="contactUrl" maxlength="500" value="${escape(event.contactUrl)}" placeholder="https://t.me/…"></label></div><div class="save-row"><button class="button" type="submit">Опубликовать событие ↗</button><p class="form-status" role="status"></p></div></form></section>`;
+  $("#back-events").addEventListener("click", renderEvents);
+  $("#event-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    submit(e.target, async () => {
+      const f = Object.fromEntries(new FormData(e.target));
+      f.startsAt += ":00+05:00";
+      const result = await api("save-event", {
+        id: event.id,
+        updatedAt: content.updatedAt,
+        event: f,
+      });
+      content = result.site;
+      renderEvents();
+      toast("Событие опубликовано. Календарь обновится после обновления кэша.");
+    });
+  });
+}
+function deleteEvent(event) {
+  openDialog(
+    `<h2>Удалить событие?</h2><p>${escape(event.title)}</p><form id="delete-event-form"><button class="button danger" type="submit">Удалить ↗</button><p class="form-status" role="status"></p></form>`,
+  );
+  $("#delete-event-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    submit(e.target, async () => {
+      content = (
+        await api("delete-event", {
+          id: event.id,
+          updatedAt: content.updatedAt,
+        })
+      ).site;
+      renderEvents();
+      $("#account-dialog").close();
+      toast("Событие удалено.");
+    });
+  });
+}
+function renderSettings() {
+  const s = content.settings;
+  $("#account-content").innerHTML =
+    `<section class="editor"><h2>О сообществе</h2><p class="intro">Этот текст и контакт видны на главной странице.</p><form id="settings-form"><label>Текст о нас<textarea name="about" required maxlength="3000" rows="7">${escape(s.about)}</textarea></label><label>Название контакта<input name="contactLabel" maxlength="60" value="${escape(s.contactLabel)}" placeholder="Связаться с сообществом"></label><label>Ссылка для связи<input name="contactUrl" maxlength="500" value="${escape(s.contactUrl)}" placeholder="https://t.me/…"></label><div class="save-row"><button class="button" type="submit">Сохранить ↗</button><p class="form-status" role="status"></p></div></form></section>`;
+  $("#settings-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    submit(e.target, async () => {
+      content = (
+        await api("save-settings", {
+          updatedAt: content.updatedAt,
+          settings: Object.fromEntries(new FormData(e.target)),
+        })
+      ).site;
+      toast("Изменения сохранены.");
+      $(".form-status", e.target).textContent =
+        "Сохранено. Главная страница обновится после обновления кэша.";
+    });
+  });
+}
+try {
+  const status = await fetch("/api/account?action=status", {
+    signal: AbortSignal.timeout(10000),
+  });
+  const info = await status.json();
+  if (!info.configured) {
+    $("#login-status").textContent =
+      "Кабинеты скоро откроются. Администратор завершает подключение.";
+    $("#login-form button[type=submit]").disabled = true;
+  } else {
+    const me = await fetch("/api/account", {
+      credentials: "same-origin",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (me.ok) {
+      user = (await me.json()).user;
+      showAccount();
+    }
+  }
+} catch {
+  $("#login-status").textContent =
+    "Не удалось проверить подключение. Вы можете попробовать войти.";
+}
