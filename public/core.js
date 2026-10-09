@@ -162,10 +162,12 @@ export function initShared() {
 }
 export async function loadSite() {
   if (demo) return (await import("./demo.js")).demoSite;
+  // A minute-wide static URL avoids a long mutable-branch CDN cache.
+  const fresh = Math.floor(Date.now() / 60000);
   const urls = [
+    `https://raw.githubusercontent.com/${config.repository}/${config.dataBranch}/data/site.json?v=${fresh}`,
     `https://cdn.jsdelivr.net/gh/${config.repository}@${config.dataBranch}/data/site.json`,
     `https://fastly.jsdelivr.net/gh/${config.repository}@${config.dataBranch}/data/site.json`,
-    `https://raw.githubusercontent.com/${config.repository}/${config.dataBranch}/data/site.json`,
   ];
   for (const url of urls) {
     try {

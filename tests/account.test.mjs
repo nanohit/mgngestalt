@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import handler from "../api/account.js";
+import { writeContent } from "../lib/storage.js";
 import { hashPassword, verifyPassword } from "../lib/auth.js";
 import { profileInput, contactUrl, eventInput } from "../lib/validation.js";
 const adminPassword = "A secure admin password 123";
@@ -14,7 +15,8 @@ const strings = new Map(),
   users = new Map();
 let site = JSON.parse(await readFile("public/data/site.json", "utf8")),
   sha = "initial",
-  githubBroken = false;
+  githubBroken = false,
+  purgeThrottled = false;
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, options = {}) => {
   if (String(url).startsWith("https://redis.example.test")) {
@@ -67,7 +69,7 @@ globalThis.fetch = async (url, options = {}) => {
     });
   }
   if (String(url).includes("purge.jsdelivr.net"))
-    return Response.json({ status: "finished" });
+    return Response.json({ status: "finished", paths: { "/data/site.json": { throttled: purgeThrottled } } });
   throw new Error("Unexpected network URL");
 };
 const call = async (action, body = {}, sessionCookie = "", extra = {}) => {
@@ -303,4 +305,16 @@ test("published profiles require contacts, IDs and roles cannot come from input"
 });
 test.after(() => {
   globalThis.fetch = realFetch;
+});
+
+test("finished CDN purge can still be throttled", async () => {
+  purgeThrottled = true;
+  try {
+    const publication = await writeContent(structuredClone(site), sha);
+    assert.equal(publication.delayed, true);
+  } finally {
+    purgeThrottled = false;
+  }
+  const publication = await writeContent(structuredClone(site), sha);
+  assert.equal(publication.delayed, false);
 });
