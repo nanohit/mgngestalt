@@ -1,8 +1,16 @@
 import { randomBytes } from "node:crypto";
-import { writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir, readFile } from "node:fs/promises";
 import { execFileSync, spawnSync } from "node:child_process";
 import { hashPassword } from "../lib/auth.js";
 const scope = "vfeb8c02646d6999bcd7afce8";
+const link = JSON.parse(await readFile(".vercel/project.json", "utf8"));
+if (
+  link.projectId !== "prj_cQCdMO4meqMbtw5l3208lOajmMe1" ||
+  link.orgId !== "team_e1gOZOYYchnp8lmUT2WDT3vz"
+) {
+  console.error("Link this checkout to the intended mgngestalt project first.");
+  process.exit(1);
+}
 // Inspect exactly this project's link. Never read or print authentication tokens.
 execFileSync("vercel", ["project", "inspect", "mgngestalt", "--scope", scope], {
   stdio: "inherit",
