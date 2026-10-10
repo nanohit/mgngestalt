@@ -16,9 +16,9 @@ const files = new Map(), photos = [];
 globalThis.fetch = async (url, options = {}) => {
   const { host, pathname: path } = new URL(url);
   if (host === "api.imgbb.com") {
-    const image = new URLSearchParams(options.body).get("image");
-    photos.push(image);
-    return Response.json({ success: true, data: { url: `https://i.ibb.co/Ab${photos.length}/${crypto.randomUUID()}.webp` } });
+    const form = new URLSearchParams(options.body);
+    photos.push(form.get("image"));
+    return Response.json({ success: true, data: { url: `https://i.ibb.co/Ab${photos.length}/${form.get("name")}.webp` } });
   }
   assert.equal(options.headers.apikey, "test-service");
   if (path.startsWith("/rest/v1/rpc/")) {
@@ -356,6 +356,7 @@ test("visitors get a short list; full profiles and events are separate files", a
   const saved = await call("save-profile", {
     revision: 0,
     photo: webp,
+    thumb: webp,
     profile: {
       name: "Вера Гордеева", summary: "Коротко", about: "Длинный рассказ о работе",
       education: "МГИ", formats: ["online"], topics: ["Тревога"], duration: 50,
@@ -363,14 +364,24 @@ test("visitors get a short list; full profiles and events are separate files", a
     },
   }, tc);
   assert.equal(saved.status, 200);
-  assert.match(saved.data.user.profile.photo, /^https:\/\/i\.ibb\.co\//);
+  assert.match(saved.data.user.profile.photo, /^https:\/\/i\.ibb\.co\/Ab\d+\/photo\.webp$/);
+  assert.match(saved.data.user.profile.thumb, /^https:\/\/i\.ibb\.co\/Ab\d+\/thumb\.webp$/);
   const index = JSON.parse(files.get("data/site.json"));
   const card = index.therapists.find((p) => p.id === "vera-id");
   assert.equal(card.name, "Вера Гордеева");
+  // The list carries only the small copy of the photo.
+  assert.equal(card.thumb, saved.data.user.profile.thumb);
+  assert.equal(card.photo, undefined);
   assert.equal(card.about, undefined);
   assert.equal(card.contacts, undefined);
   const full = JSON.parse(files.get("data/therapists/vera-id.json"));
   assert.equal(full.about, "Длинный рассказ о работе");
+  assert.equal(full.photo, saved.data.user.profile.photo);
+  // The photo URLs can only be changed by uploading a file.
+  assert.equal((await call("save-profile", {
+    revision: 1,
+    profile: { ...saved.data.user.profile, thumb: "https://i.ibb.co/Zz1/thumb.webp" },
+  }, tc)).status, 400);
   assert.equal(full.contacts[0].url, "https://t.me/vera");
   // Unpublishing removes the separate public file.
   const hidden = await call("save-profile", {

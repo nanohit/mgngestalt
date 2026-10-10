@@ -48,11 +48,12 @@ export const priceLabel = (p) =>
   p.price != null
     ? `от\u00a0${Number(p.price).toLocaleString("ru-RU").replace(/[\s\u00a0\u202f]/g, "\u202f")}\u00a0₽`
     : "Стоимость по запросу";
-export function portrait(p, className = "", decorative = false) {
-  const src = photoUrl(p.photo);
+// Карточки берут уменьшенную копию фото (thumb), анкета — полное фото.
+export function portrait(p, { className = "", decorative = false, small = false, eager = false } = {}) {
+  const src = photoUrl(small ? p.thumb || p.photo : p.photo || p.thumb);
   const label = decorative ? 'aria-hidden="true"' : `aria-label="${escape(p.name)}"`;
   return src
-    ? `<img class="portrait ${className}" src="${escape(src)}" data-photo-fallback="${escape(p.name)}" alt="${decorative ? "" : escape(p.name)}" loading="lazy" width="480" height="400">`
+    ? `<img class="portrait ${className}" src="${escape(src)}" data-photo-fallback="${escape(p.name)}" alt="${decorative ? "" : escape(p.name)}" ${eager ? (small ? "" : 'fetchpriority="high"') : 'loading="lazy"'} decoding="async" width="${small ? 256 : 480}" height="${small ? 320 : 600}">`
     : `<div class="portrait initial-portrait ${className}" ${label}>${escape(initials(p.name))}</div>`;
 }
 export function installImageFallbacks(root = document) {
@@ -179,22 +180,84 @@ export function initShared() {
   );
   if ($("#footer-year"))
     $("#footer-year").textContent = new Date().getFullYear();
+  // Десктоп: когда шапка целиком ушла вверх, меню закрепляется сверху (style.css).
+  const header = $(".site-header");
+  if (header && "IntersectionObserver" in window)
+    new IntersectionObserver(([entry]) =>
+      header.classList.toggle(
+        "is-stuck",
+        !entry.isIntersecting && entry.boundingClientRect.top < 0,
+      ),
+    ).observe(header);
 }
-const nonce = () => Math.floor(Date.now() / 60000);
 async function getJson(url) {
   const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) throw Object.assign(new Error("not ok"), { status: res.status });
   return res.json();
+}
+// Каталог хранится и в браузере: страницы и возврат «назад» рисуются сразу
+// из сохранённой копии, сеть нужна при первом визите и затем раз в пять
+// минут — свежая версия догружается в фоне.
+const CACHE = "mgg.cache.v1:",
+  FRESH = 5 * 60000;
+function recall(key) {
+  try {
+    return JSON.parse(localStorage.getItem(CACHE + key));
+  } catch {
+    return null;
+  }
+}
+function remember(key, value) {
+  try {
+    localStorage.setItem(CACHE + key, JSON.stringify(value));
+  } catch {}
+}
+// Кабинет после сохранения сбрасывает копию; метка сохранения в адресе
+// запроса обходит кэш CDN, чтобы автор сразу увидел свои изменения.
+export function forgetCache() {
+  try {
+    for (const key of Object.keys(localStorage))
+      if (key.startsWith(CACHE)) localStorage.removeItem(key);
+  } catch {}
+  remember("saved", Date.now());
+}
+const loading = new Map();
+function fetchData(path) {
+  if (!loading.has(path)) {
+    const saved = recall("saved");
+    const nonce = Math.floor(Date.now() / 60000) + (saved ? `-${saved}` : "");
+    loading.set(
+      path,
+      getJson(`${config.storageUrl}/data/${path}.json?cacheNonce=${nonce}`)
+        .then((data) => {
+          remember(path, { at: Date.now(), data });
+          return data;
+        })
+        .finally(() => loading.delete(path)),
+    );
+  }
+  return loading.get(path);
+}
+// Сразу отдаёт сохранённую копию; если она старше FRESH, обновляет её
+// в фоне и вызывает onUpdate, когда данные изменились.
+async function cached(path, onUpdate) {
+  const hit = recall(path);
+  if (!hit?.data) return fetchData(path);
+  if (Date.now() - hit.at > FRESH)
+    fetchData(path).then((data) => {
+      if (JSON.stringify(data) !== JSON.stringify(hit.data)) onUpdate?.(data);
+    }, () => {});
+  return hit.data;
 }
 // Сохранённый в деплое снимок с jsDelivr — на случай недоступности Supabase.
 let snapshot;
 const loadSnapshot = () =>
   (snapshot ??= getJson(new URL("./data/site.json", import.meta.url).href));
 // Список для главной: без длинных текстов, чтобы ответ оставался маленьким.
-export async function loadSite() {
+export async function loadSite(onUpdate) {
   if (demo) return (await import("./demo.js")).demoSite;
   try {
-    const data = await getJson(`${config.storageUrl}/data/site.json?cacheNonce=${nonce()}`);
+    const data = await cached("site", onUpdate);
     if (Array.isArray(data.therapists) && Array.isArray(data.events)) return data;
   } catch {}
   try {
@@ -206,12 +269,10 @@ export async function loadSite() {
   }
 }
 // Полная анкета или событие — отдельным небольшим файлом.
-async function loadDetail(kind, id) {
+async function loadDetail(kind, id, onUpdate) {
   if (demo) return (await import("./demo.js")).demoSite[kind].find((x) => x.id === id) || null;
   try {
-    return await getJson(
-      `${config.storageUrl}/data/${kind}/${encodeURIComponent(id)}.json?cacheNonce=${nonce()}`,
-    );
+    return await cached(`${kind}/${encodeURIComponent(id)}`, onUpdate);
   } catch (e) {
     if (e.status === 400 || e.status === 404) return null;
     const data = await loadSnapshot().catch(() => null);
@@ -220,12 +281,21 @@ async function loadDetail(kind, id) {
     return data[kind].find((x) => x.id === id) || null;
   }
 }
-export const loadTherapist = (id) => loadDetail("therapists", id);
+export const loadTherapist = (id, onUpdate) => loadDetail("therapists", id, onUpdate);
 export const loadEvent = (id) => loadDetail("events", id);
+// Карточка из сохранённого списка: анкета показывается сразу, пока
+// догружаются описание и контакты.
+export const cachedCard = (id) =>
+  demo ? null : recall("site")?.data?.therapists?.find((p) => p.id === id) || null;
+// Анкету подгружаем заранее, когда посетитель навёл на карточку или коснулся её.
+export function prefetchTherapist(id) {
+  if (!demo && !recall(`therapists/${encodeURIComponent(id)}`))
+    fetchData(`therapists/${encodeURIComponent(id)}`).catch(() => {});
+}
 
-export function therapistCard(p) {
+export function therapistCard(p, index = 0) {
   const link = `${base}/therapist/${encodeURIComponent(p.id)}${demo ? "?demo=1" : ""}`;
-  return `<article class="therapist-card"><div class="card-photo">${portrait(p, "", true)}</div><div class="card-body"><p class="card-kicker"><span>Гештальт-терапевт</span><span>${escape(formatLabel(p))}</span></p><h3 class="card-name"><a class="card-link" href="${link}">${escape(p.name)}</a></h3><p class="card-description">${escape(p.summary)}</p><div class="tags">${(
+  return `<article class="therapist-card" data-id="${escape(p.id)}"><div class="card-photo">${portrait(p, { decorative: true, small: true, eager: index < 4 })}</div><div class="card-body"><p class="card-kicker"><span>Гештальт-терапевт</span><span>${escape(formatLabel(p))}</span></p><h3 class="card-name"><a class="card-link" href="${link}">${escape(p.name)}</a></h3><p class="card-description">${escape(p.summary)}</p><div class="tags">${(
     p.topics || []
   )
     .slice(0, 4)

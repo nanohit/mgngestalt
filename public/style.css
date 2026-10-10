@@ -384,6 +384,47 @@ p {
   color: var(--ink);
 }
 
+/* Десктоп: когда шапка уходит за край экрана, меню и вход остаются
+   сверху тонкой плашкой без логотипов (класс ставит core.js). */
+@media (min-width: 921px) {
+  html {
+    scroll-padding-top: 5.25rem;
+  }
+
+  .site-header.is-stuck .header-bar {
+    position: fixed;
+    z-index: 40;
+    top: 0.75rem;
+    left: 50%;
+    width: min(63rem, 100% - 3rem);
+    height: 3.5rem;
+    translate: -50% 0;
+    padding: 0 0.4375rem 0 2rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    box-shadow: 0 1px 2px rgb(60 45 20 / 5%), 0 12px 30px -16px rgb(60 45 20 / 32%);
+  }
+
+  @supports (backdrop-filter: blur(1px)) {
+    .site-header.is-stuck .header-bar {
+      background: rgb(255 253 249 / 86%);
+      backdrop-filter: blur(14px) saturate(1.15);
+    }
+  }
+
+  .profile-sidebar {
+    top: 5.25rem;
+  }
+}
+
+@keyframes bar-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.625rem);
+  }
+}
+
 /* ——— Главная ——— */
 
 .home-layout {
@@ -1198,6 +1239,9 @@ input[type="search"]::-webkit-search-cancel-button {
   height: auto;
   aspect-ratio: 4 / 5;
   border-radius: 15px;
+  /* Под полным фото — уменьшенная копия из каталога, пока полное грузится. */
+  background-position: center;
+  background-size: cover;
 }
 
 .profile-sidebar .initial-portrait {
@@ -2128,6 +2172,10 @@ input[type="file"]::file-selector-button {
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
+  }
+
+  .site-header.is-stuck .header-bar {
+    animation: bar-in 0.22s ease-out;
   }
 }
 

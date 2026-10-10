@@ -4,6 +4,7 @@ import {
   escape,
   loadSite,
   loadEvent,
+  prefetchTherapist,
   initShared,
   therapistCard,
   installImageFallbacks,
@@ -27,6 +28,18 @@ for (const id of ["search", "format", "topic"])
     id === "search" ? "input" : "change",
     renderTherapists,
   );
+// Анкету начинаем грузить, пока курсор задержался на карточке или на ней фокус.
+let hover;
+$("#therapist-grid").addEventListener("pointerover", (e) => {
+  if (e.pointerType !== "mouse") return;
+  const id = e.target.closest(".therapist-card")?.dataset.id;
+  clearTimeout(hover);
+  if (id) hover = setTimeout(() => prefetchTherapist(id), 80);
+});
+$("#therapist-grid").addEventListener("focusin", (e) => {
+  const id = e.target.closest(".therapist-card")?.dataset.id;
+  if (id) prefetchTherapist(id);
+});
 $("#month-prev").addEventListener("click", () => changeMonth(-1));
 $("#month-next").addEventListener("click", () => changeMonth(1));
 $("#clear-day").addEventListener("click", () => {
@@ -80,11 +93,13 @@ function renderTopics() {
       if (!topics.has(key)) topics.set(key, t);
     }
   const sorted = [...topics].sort((a, b) => a[1].localeCompare(b[1], "ru"));
+  const current = $("#topic").value;
   $("#topic").innerHTML =
     '<option value="">Любая</option>' +
     sorted
       .map(([key, t]) => `<option value="${escape(key)}">${escape(t)}</option>`)
       .join("");
+  $("#topic").value = topics.has(current) ? current : "";
   $("#topic").closest("label").hidden = !sorted.length;
 }
 function changeMonth(step) {
@@ -169,8 +184,9 @@ function renderEvent(e, description) {
   $("#event-detail").innerHTML =
     `<p class="eyebrow">${escape(e.type)}</p><h2>${escape(e.title)}</h2><div class="tags"><span class="tag">${eventDate(e.startsAt)}</span><span class="tag">${eventTime(e.startsAt)} · время Магнитогорска</span><span class="tag">${escape(e.location)}</span>${e.price ? `<span class="tag">${escape(e.price)}</span>` : ""}</div><p class="detail-text${description == null ? " muted" : ""}">${escape(description ?? "Загрузка описания…")}</p>${contact ? `<a class="button" href="${escape(contact)}" target="_blank" rel="noopener noreferrer">${escape(e.contactLabel || "Контакты организатора")}</a>` : '<p class="muted">Контакт для записи не указан.</p>'}`;
 }
-try {
-  site = await loadSite();
+// Вызывается и второй раз, если в фоне пришла более свежая версия каталога.
+function apply(data) {
+  site = data;
   $("#about-copy").textContent = site.settings.about;
   const contact = safeUrl(site.settings.contactUrl);
   if (contact) {
@@ -185,6 +201,9 @@ try {
   renderTopics();
   renderTherapists();
   renderCalendar();
+}
+try {
+  apply(await loadSite(apply));
 } catch (e) {
   $("#therapist-grid").innerHTML = empty(
     "Не получилось загрузить каталог",

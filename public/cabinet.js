@@ -6,6 +6,7 @@ import {
   initShared,
   toast,
   photoUrl,
+  forgetCache,
   eventDate,
   eventTime,
   base,
@@ -65,8 +66,35 @@ const api = async (action, payload = {}) => {
     throw new Error(data.error || "Не удалось выполнить действие.");
   }
   if (data.token) saveToken(data.token);
+  // Сохранённое сразу видно на сайте в этом браузере.
+  if (/^(save|delete)-/.test(action)) forgetCache();
   return data;
 };
+function draw(source, scale) {
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(source.width * scale);
+  canvas.height = Math.round(source.height * scale);
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+async function webp(canvas, maxBytes) {
+  for (const quality of [0.85, 0.75, 0.65, 0.5]) {
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/webp", quality),
+    );
+    if (blob?.type === "image/webp" && blob.size <= maxBytes) return blob;
+  }
+  throw new Error("Не получилось сжать фото. Попробуйте другой файл.");
+}
+const base64 = (blob) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 function bindPasswordToggles(root = document) {
   $$("[data-password]", root).forEach((b) =>
     b.addEventListener("click", () => {
@@ -265,29 +293,15 @@ function renderProfile(account) {
           "Фотография слишком большая. Уменьшите её перед загрузкой.",
         );
       }
-      const scale = Math.min(1, 720 / Math.max(image.width, image.height)),
-        canvas = document.createElement("canvas");
-      canvas.width = Math.round(image.width * scale);
-      canvas.height = Math.round(image.height * scale);
-      canvas
-        .getContext("2d")
-        .drawImage(image, 0, 0, canvas.width, canvas.height);
+      // Фото для анкеты и уменьшенная копия для карточки каталога (cover 256×320).
+      const photo = draw(image, Math.min(1, 640 / Math.max(image.width, image.height)));
       image.close();
-      let blob;
-      for (const quality of [0.85, 0.75, 0.65, 0.5]) {
-        blob = await new Promise((resolve) =>
-          canvas.toBlob(resolve, "image/webp", quality),
-        );
-        if (blob?.size <= 180000) break;
-      }
-      if (!blob || blob.type !== "image/webp" || blob.size > 180000)
-        throw new Error("Не получилось сжать фото. Попробуйте другой файл.");
-      pendingPhoto = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result).split(",")[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
+      const thumb = draw(photo, Math.min(1, Math.max(256 / photo.width, 320 / photo.height)));
+      const blob = await webp(photo, 150000);
+      pendingPhoto = {
+        photo: await base64(blob),
+        thumb: await base64(await webp(thumb, 40000)),
+      };
       removePhoto = false;
       const preview = $("#photo-preview");
       if (preview.dataset.objectUrl)
@@ -331,7 +345,8 @@ function renderProfile(account) {
         login: account.login,
         revision: account.revision,
         profile,
-        photo: pendingPhoto,
+        photo: pendingPhoto?.photo,
+        thumb: pendingPhoto?.thumb,
         removePhoto,
       });
       Object.assign(account, result.user);
