@@ -23,9 +23,13 @@ export function safeUrl(value) {
   } catch {}
   return "";
 }
+// Фото на ImgBB; старые фото — в Supabase Storage.
 export function photoUrl(value) {
-  if (!value || !/^uploads\/[a-f0-9-]+\.webp$/.test(value)) return "";
-  return `${config.storageUrl}/${value}`;
+  if (/^https:\/\/i\.ibb\.co\/[A-Za-z0-9]+\/[A-Za-z0-9._-]+\.webp$/.test(value || ""))
+    return value;
+  if (/^uploads\/[a-f0-9-]+\.webp$/.test(value || ""))
+    return `${config.storageUrl}/${value}`;
+  return "";
 }
 export const initials = (name) =>
   name
@@ -176,24 +180,48 @@ export function initShared() {
   if ($("#footer-year"))
     $("#footer-year").textContent = new Date().getFullYear();
 }
+const nonce = () => Math.floor(Date.now() / 60000);
+async function getJson(url) {
+  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  if (!res.ok) throw Object.assign(new Error("not ok"), { status: res.status });
+  return res.json();
+}
+// Сохранённый в деплое снимок с jsDelivr — на случай недоступности Supabase.
+let snapshot;
+const loadSnapshot = () =>
+  (snapshot ??= getJson(new URL("./data/site.json", import.meta.url).href));
+// Список для главной: без длинных текстов, чтобы ответ оставался маленьким.
 export async function loadSite() {
   if (demo) return (await import("./demo.js")).demoSite;
-  const sources = [
-    `${config.storageUrl}/data/site.json?cacheNonce=${Math.floor(Date.now() / 60000)}`,
-    new URL("./data/site.json", import.meta.url).href,
-  ];
-  for (let i = 0; i < sources.length; i++) {
-    try {
-      const res = await fetch(sources[i], { signal: AbortSignal.timeout(10000) });
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (!Array.isArray(data.therapists) || !Array.isArray(data.events)) continue;
-      if (i) toast("Показана сохранённая версия. Обновления временно недоступны.");
-      return data;
-    } catch {}
+  try {
+    const data = await getJson(`${config.storageUrl}/data/site.json?cacheNonce=${nonce()}`);
+    if (Array.isArray(data.therapists) && Array.isArray(data.events)) return data;
+  } catch {}
+  try {
+    const data = await loadSnapshot();
+    toast("Показана сохранённая версия. Обновления временно недоступны.");
+    return data;
+  } catch {
+    throw new Error("Не удалось загрузить данные. Попробуйте обновить страницу.");
   }
-  throw new Error("Не удалось загрузить данные. Попробуйте обновить страницу.");
 }
+// Полная анкета или событие — отдельным небольшим файлом.
+async function loadDetail(kind, id) {
+  if (demo) return (await import("./demo.js")).demoSite[kind].find((x) => x.id === id) || null;
+  try {
+    return await getJson(
+      `${config.storageUrl}/data/${kind}/${encodeURIComponent(id)}.json?cacheNonce=${nonce()}`,
+    );
+  } catch (e) {
+    if (e.status === 400 || e.status === 404) return null;
+    const data = await loadSnapshot().catch(() => null);
+    if (!data) throw new Error("Не удалось загрузить данные. Попробуйте обновить страницу.");
+    toast("Показана сохранённая версия. Обновления временно недоступны.");
+    return data[kind].find((x) => x.id === id) || null;
+  }
+}
+export const loadTherapist = (id) => loadDetail("therapists", id);
+export const loadEvent = (id) => loadDetail("events", id);
 
 export function therapistCard(p) {
   const link = `${base}/therapist/${encodeURIComponent(p.id)}${demo ? "?demo=1" : ""}`;

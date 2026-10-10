@@ -1,7 +1,7 @@
 import {
   $,
   escape,
-  loadSite,
+  loadTherapist,
   initShared,
   portrait,
   installImageFallbacks,
@@ -19,8 +19,8 @@ const id = decodeURIComponent(
     "",
 );
 try {
-  const site = await loadSite(),
-    p = site.therapists.find((p) => p.id === id && p.published);
+  const found = id ? await loadTherapist(id) : null,
+    p = found?.published ? found : null;
   $("#profile-status").hidden = true;
   if (!p) {
     $("#profile").innerHTML = empty(

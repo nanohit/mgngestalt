@@ -35,7 +35,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://fastly.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net https://fastly.jsdelivr.net; img-src 'self' data: blob: https://cdn.jsdelivr.net https://fastly.jsdelivr.net https://uwcvheonmfsibqtcfosw.supabase.co; connect-src 'self' https://cdn.jsdelivr.net https://fastly.jsdelivr.net https://uwcvheonmfsibqtcfosw.supabase.co; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+          "value": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://fastly.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net https://fastly.jsdelivr.net; img-src 'self' data: blob: https://cdn.jsdelivr.net https://fastly.jsdelivr.net https://i.ibb.co https://uwcvheonmfsibqtcfosw.supabase.co; connect-src 'self' https://cdn.jsdelivr.net https://fastly.jsdelivr.net https://uwcvheonmfsibqtcfosw.supabase.co; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
         }
       ]
     },

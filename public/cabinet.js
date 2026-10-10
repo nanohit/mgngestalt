@@ -358,10 +358,20 @@ function renderAccounts() {
   $("#account-content").innerHTML =
     `<section class="account-list"><div class="list-heading"><h2>Участники <span class="muted">${accounts.length}/40</span></h2><button class="button" id="create-account" ${accounts.length >= 40 ? "disabled" : ""}>Добавить участника</button></div><p class="disclosure">Выдайте логин и временный пароль лично. При первом входе участник задаст свой пароль.</p>${accounts.length ? accounts.map((a) => `<article class="account-row"><div><h3>${escape(a.profile?.name || a.login)}</h3><p>${escape(a.login)} · ${a.profile?.published ? "В каталоге" : "Черновик"}${a.mustChange ? " · Временный пароль" : ""}</p></div><div class="row-actions"><button class="button secondary" data-edit="${escape(a.id)}">Профиль</button><button class="button secondary" data-reset="${escape(a.id)}">Сбросить пароль</button><button class="button secondary" data-delete="${escape(a.id)}">Удалить</button></div></article>`).join("") : '<p class="notice">Добавьте первого участника — его профиль появится после заполнения и публикации.</p>'}</section>`;
   $("#create-account").addEventListener("click", openCreate);
+  // The list holds names only; the full profile is loaded for editing.
   $$("[data-edit]").forEach((b) =>
-    b.addEventListener("click", () =>
-      renderProfile(accounts.find((a) => a.id === b.dataset.edit)),
-    ),
+    b.addEventListener("click", async () => {
+      const account = accounts.find((a) => a.id === b.dataset.edit);
+      b.disabled = true;
+      try {
+        Object.assign(account, (await api("get-account", { login: account.login })).account);
+        renderProfile(account);
+      } catch (e) {
+        toast(e.message);
+      } finally {
+        b.disabled = false;
+      }
+    }),
   );
   $$("[data-reset]").forEach((b) =>
     b.addEventListener("click", () =>

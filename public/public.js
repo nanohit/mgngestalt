@@ -3,6 +3,7 @@ import {
   $$,
   escape,
   loadSite,
+  loadEvent,
   initShared,
   therapistCard,
   installImageFallbacks,
@@ -41,7 +42,7 @@ function renderTherapists() {
   const people = all.filter(
     (p) =>
       (!q ||
-        [p.name, p.summary, p.about, ...(p.topics || [])]
+        [p.name, p.summary, ...(p.topics || [])]
           .join(" ")
           .toLocaleLowerCase("ru")
           .includes(q)) &&
@@ -150,11 +151,23 @@ function renderCalendar() {
     ),
   );
 }
-function openEvent(e) {
+// The list has no long descriptions; the full event is loaded on open.
+async function openEvent(e) {
+  renderEvent(e, e.description ?? null);
+  $("#event-dialog").showModal();
+  if (e.description != null) return;
+  try {
+    const full = await loadEvent(e.id);
+    renderEvent(e, full?.description || "");
+  } catch (error) {
+    renderEvent(e, "");
+    toast(error.message);
+  }
+}
+function renderEvent(e, description) {
   const contact = safeUrl(e.contactUrl);
   $("#event-detail").innerHTML =
-    `<p class="eyebrow">${escape(e.type)}</p><h2>${escape(e.title)}</h2><div class="tags"><span class="tag">${eventDate(e.startsAt)}</span><span class="tag">${eventTime(e.startsAt)} · время Магнитогорска</span><span class="tag">${escape(e.location)}</span>${e.price ? `<span class="tag">${escape(e.price)}</span>` : ""}</div><p class="detail-text">${escape(e.description)}</p>${contact ? `<a class="button" href="${escape(contact)}" target="_blank" rel="noopener noreferrer">${escape(e.contactLabel || "Контакты организатора")}</a>` : '<p class="muted">Контакт для записи не указан.</p>'}`;
-  $("#event-dialog").showModal();
+    `<p class="eyebrow">${escape(e.type)}</p><h2>${escape(e.title)}</h2><div class="tags"><span class="tag">${eventDate(e.startsAt)}</span><span class="tag">${eventTime(e.startsAt)} · время Магнитогорска</span><span class="tag">${escape(e.location)}</span>${e.price ? `<span class="tag">${escape(e.price)}</span>` : ""}</div><p class="detail-text${description == null ? " muted" : ""}">${escape(description ?? "Загрузка описания…")}</p>${contact ? `<a class="button" href="${escape(contact)}" target="_blank" rel="noopener noreferrer">${escape(e.contactLabel || "Контакты организатора")}</a>` : '<p class="muted">Контакт для записи не указан.</p>'}`;
 }
 try {
   site = await loadSite();

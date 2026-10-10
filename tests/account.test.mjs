@@ -12,8 +12,14 @@ const strings = new Map(), users = new Map();
 let site = {version:1, updatedAt:new Date(0).toISOString(), settings:{about:"About",contactLabel:"",contactUrl:""},therapists:[],events:[]}, storageBroken = false;
 const realFetch = globalThis.fetch;
 const copy = value => value == null ? value : structuredClone(value);
+const files = new Map(), photos = [];
 globalThis.fetch = async (url, options = {}) => {
-  const path = new URL(url).pathname;
+  const { host, pathname: path } = new URL(url);
+  if (host === "api.imgbb.com") {
+    const image = new URLSearchParams(options.body).get("image");
+    photos.push(image);
+    return Response.json({ success: true, data: { url: `https://i.ibb.co/Ab${photos.length}/${crypto.randomUUID()}.webp` } });
+  }
   assert.equal(options.headers.apikey, "test-service");
   if (path.startsWith("/rest/v1/rpc/")) {
     const b=JSON.parse(options.body);
@@ -35,8 +41,13 @@ globalThis.fetch = async (url, options = {}) => {
       const n=(strings.get(key)||0)+1;strings.set(key,n);return Response.json(n);
     }
   }
+  if (path === "/storage/v1/object/site" && options.method === "DELETE") {
+    for (const prefix of JSON.parse(options.body).prefixes) files.delete(prefix);
+    return Response.json([]);
+  }
   if (path.startsWith("/storage/v1/object/site/")) {
     if (storageBroken) return Response.json({}, {status:503});
+    files.set(path.slice("/storage/v1/object/site/".length), String(options.body));
     return Response.json({Key:path});
   }
   throw new Error("Unexpected network URL");
@@ -330,6 +341,61 @@ test("therapists can sign in by surname or full name when it is unique", async (
     (await call("login", { login: "Ёлкина", password: "A wrong password 123" })).status,
     401,
   );
+});
+test("visitors get a short list; full profiles and events are separate files", async () => {
+  process.env.IMGBB_API_KEY = "test-imgbb";
+  const password = "A therapist password 123";
+  const passwordHash = await hashPassword(password);
+  users.set("vera", {
+    id: "vera-id", login: "vera", role: "therapist", passwordHash,
+    version: 1, mustChange: false, revision: 0, profile: { name: "Вера Гордеева" },
+  });
+  const login = await call("login", { login: "Гордеева", password });
+  const tc = tokenOf(login);
+  const webp = Buffer.concat([Buffer.from("RIFF"), Buffer.alloc(4), Buffer.from("WEBP"), Buffer.alloc(20)]).toString("base64");
+  const saved = await call("save-profile", {
+    revision: 0,
+    photo: webp,
+    profile: {
+      name: "Вера Гордеева", summary: "Коротко", about: "Длинный рассказ о работе",
+      education: "МГИ", formats: ["online"], topics: ["Тревога"], duration: 50,
+      contacts: [{ label: "Telegram", url: "https://t.me/vera" }], published: true, photo: "",
+    },
+  }, tc);
+  assert.equal(saved.status, 200);
+  assert.match(saved.data.user.profile.photo, /^https:\/\/i\.ibb\.co\//);
+  const index = JSON.parse(files.get("data/site.json"));
+  const card = index.therapists.find((p) => p.id === "vera-id");
+  assert.equal(card.name, "Вера Гордеева");
+  assert.equal(card.about, undefined);
+  assert.equal(card.contacts, undefined);
+  const full = JSON.parse(files.get("data/therapists/vera-id.json"));
+  assert.equal(full.about, "Длинный рассказ о работе");
+  assert.equal(full.contacts[0].url, "https://t.me/vera");
+  // Unpublishing removes the separate public file.
+  const hidden = await call("save-profile", {
+    revision: 1,
+    profile: { ...saved.data.user.profile, published: false },
+  }, tc);
+  assert.equal(hidden.status, 200);
+  assert.equal(files.has("data/therapists/vera-id.json"), false);
+  assert.equal(JSON.parse(files.get("data/site.json")).therapists.some((p) => p.id === "vera-id"), false);
+});
+test("the cabinet lists names only and loads one full profile for editing", async () => {
+  const existing = users.get("admin");
+  const admin = await call("login", {
+    login: "admin",
+    password: existing.mustChange ? adminPassword : "A new admin password 123",
+  });
+  const ac = tokenOf(admin);
+  const list = await call("list-accounts", {}, ac);
+  const vera = list.data.accounts.find((a) => a.login === "vera");
+  assert.deepEqual(Object.keys(vera.profile).sort(), ["name", "published"]);
+  const full = await call("get-account", { login: "vera" }, ac);
+  assert.equal(full.data.account.profile.about, "Длинный рассказ о работе");
+  const content = await call("admin-content", {}, ac);
+  assert.equal(content.data.site.therapists, undefined);
+  assert.ok(Array.isArray(content.data.site.events));
 });
 test("failed public upload keeps the catalogue version unchanged", async () => {
   const before=structuredClone(site);
