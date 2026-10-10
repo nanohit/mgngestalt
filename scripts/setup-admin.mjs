@@ -20,6 +20,6 @@ const res = await fetch(`${endpoint}/secrets`, {
 });
 if (!res.ok) throw new Error(`Could not set administrator hash: ${res.status}`);
 await mkdir("artifacts", { recursive: true });
-await writeFile("artifacts/admin-access.local", `Вход: https://mgngestalt.vercel.app/cabinet\nЛогин: admin\nВременный пароль: ${temporary}\nПри первом входе замените пароль.\n`, { mode: 0o600 });
+await writeFile("artifacts/admin-access.local", `Вход: https://mgn.gestalt.forum/cabinet\nЛогин: admin\nВременный пароль: ${temporary}\nПри первом входе замените пароль.\n`, { mode: 0o600 });
 await chmod("artifacts/admin-access.local", 0o600);
 console.log("Bootstrap configured. Password saved to artifacts/admin-access.local (0600, ignored by Git).");
