@@ -1270,6 +1270,16 @@ input[type="search"]::-webkit-search-cancel-button {
   content: "\00a0·\00a0";
 }
 
+/* Формат — отдельной строкой, цена и длительность — под ним: точка не
+   остаётся висеть в конце строки. */
+.profile-facts span:first-child {
+  display: block;
+}
+
+.profile-facts span:first-child::after {
+  content: none;
+}
+
 .profile-content {
   min-width: 0;
   padding: 1.75rem 2rem 0.75rem;
