@@ -154,16 +154,26 @@ function layout() {
   layer.classList.add("ready");
 }
 
+// Where scroll-driven animations exist, the browser turns the rings itself
+// (smooth even during momentum scrolling); the script only sets the final
+// angle for the bottom of the page. Elsewhere it follows the scroll with a
+// little easing.
+const scrollDriven = CSS.supports?.("animation-timeline: scroll()") ?? false;
 let shown = 0;
 function place() {
   const turn = (shown * DRIFT) / radius;
+  const end = scrollDriven
+    ? ((document.documentElement.scrollHeight - innerHeight) * DRIFT) / radius
+    : 0;
   for (const ring of rings) {
     const half = ring.side / 2;
-    ring.canvas.style.transform = `translate(${ring.x - half}px, ${ring.y - half}px) rotate(${turn * ring.turn}rad)`;
+    ring.canvas.style.translate = `${ring.x - half}px ${ring.y - half}px`;
+    if (scrollDriven)
+      ring.canvas.style.setProperty("--turn-end", `${end * ring.turn}rad`);
+    else ring.canvas.style.rotate = `${turn * ring.turn}rad`;
   }
 }
 
-// Ease towards the scroll position so the rings keep a little inertia.
 let frame = 0;
 function follow() {
   shown += (window.scrollY - shown) * 0.1;
@@ -175,7 +185,10 @@ function follow() {
 const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (!still) shown = window.scrollY;
 layout();
-if (!still)
+if (scrollDriven)
+  // The catalogue renders after the data arrives and changes the page height.
+  new ResizeObserver(() => place()).observe(document.documentElement);
+else if (!still)
   addEventListener(
     "scroll",
     () => {

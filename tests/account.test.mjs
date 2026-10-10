@@ -300,6 +300,37 @@ test.after(() => {
   globalThis.fetch = realFetch;
 });
 
+test("therapists can sign in by surname or full name when it is unique", async () => {
+  const password = "A therapist password 123";
+  const passwordHash = await hashPassword(password);
+  const add = (login, name) =>
+    users.set(login, {
+      id: crypto.randomUUID(),
+      login,
+      role: "therapist",
+      passwordHash,
+      version: 1,
+      mustChange: false,
+      revision: 0,
+      profile: { name },
+    });
+  add("elkina", "Ирина Ёлкина");
+  add("petrov1", "Иван Петров");
+  add("petrov2", "Олег Петров");
+  for (const login of ["Ёлкина", "елкина", "Ирина  Ёлкина", "Ёлкина Ирина", "elkina"]) {
+    const r = await call("login", { login, password });
+    assert.equal(r.status, 200, login);
+    assert.equal(r.data.user.login, "elkina");
+  }
+  // Ambiguous surname: the login or the full name is needed.
+  assert.equal((await call("login", { login: "Петров", password })).status, 401);
+  const full = await call("login", { login: "Олег Петров", password });
+  assert.equal(full.data.user.login, "petrov2");
+  assert.equal(
+    (await call("login", { login: "Ёлкина", password: "A wrong password 123" })).status,
+    401,
+  );
+});
 test("failed public upload keeps the catalogue version unchanged", async () => {
   const before=structuredClone(site);
   storageBroken=true;

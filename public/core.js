@@ -42,27 +42,41 @@ export const formatLabel = (p) =>
       : "Очно";
 export const priceLabel = (p) =>
   p.price != null
-    ? `от ${Number(p.price).toLocaleString("ru-RU").replace(/[\s\u00a0\u202f]/g, "\u202f")} ₽`
+    ? `от\u00a0${Number(p.price).toLocaleString("ru-RU").replace(/[\s\u00a0\u202f]/g, "\u202f")}\u00a0₽`
     : "Стоимость по запросу";
-export function portrait(p, className = "") {
+export function portrait(p, className = "", decorative = false) {
   const src = photoUrl(p.photo);
+  const label = decorative ? 'aria-hidden="true"' : `aria-label="${escape(p.name)}"`;
   return src
-    ? `<img class="portrait ${className}" src="${escape(src)}" data-photo-fallback="${escape(p.name)}" alt="${escape(p.name)}" loading="lazy" width="480" height="400">`
-    : `<div class="portrait initial-portrait ${className}" aria-label="${escape(p.name)}">${escape(initials(p.name))}</div>`;
+    ? `<img class="portrait ${className}" src="${escape(src)}" data-photo-fallback="${escape(p.name)}" alt="${decorative ? "" : escape(p.name)}" loading="lazy" width="480" height="400">`
+    : `<div class="portrait initial-portrait ${className}" ${label}>${escape(initials(p.name))}</div>`;
 }
 export function installImageFallbacks(root = document) {
-  $$("img[data-photo-fallback]", root).forEach((img) =>
-    img.addEventListener(
-      "error",
-      () => {
-        const el = document.createElement("div");
-        el.className = "portrait initial-portrait";
-        el.textContent = initials(img.dataset.photoFallback);
-        img.replaceWith(el);
-      },
-      { once: true },
-    ),
-  );
+  $$("img[data-photo-fallback]", root).forEach((img) => {
+    const fallback = () => {
+      if (!img.isConnected) return;
+      const el = document.createElement("div");
+      el.className = img.className.replace("portrait", "portrait initial-portrait");
+      el.textContent = initials(img.dataset.photoFallback);
+      if (img.alt) el.setAttribute("aria-label", img.alt);
+      else el.setAttribute("aria-hidden", "true");
+      img.replaceWith(el);
+    };
+    img.addEventListener("error", fallback, { once: true });
+    // Throttled connections can stall without an error; show initials instead.
+    const check = () =>
+      setTimeout(() => {
+        if (!img.complete || !img.naturalWidth) fallback();
+      }, 10000);
+    if (img.loading === "lazy" && !img.complete)
+      new IntersectionObserver((entries, observer) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          observer.disconnect();
+          check();
+        }
+      }).observe(img);
+    else check();
+  });
 }
 export function empty(title, body, action = "") {
   return `<div class="empty-state"><h3>${escape(title)}</h3><p>${escape(body)}</p>${action}</div>`;
@@ -124,7 +138,7 @@ export function initShared() {
     const img = document.createElement("img");
     img.className = "institutes-logo";
     if (partnerSlot.matches(".footer")) img.loading = "lazy";
-    img.alt = "ОПП ГП · программа «Московский гештальт институт»";
+    img.alt = "ОПП ГП · гештальт-сообщество";
     img.src = new URL(`./assets/${config.logos[1]}`, import.meta.url).href;
     img.addEventListener(
       "error",
@@ -183,12 +197,12 @@ export async function loadSite() {
 
 export function therapistCard(p) {
   const link = `${base}/therapist/${encodeURIComponent(p.id)}${demo ? "?demo=1" : ""}`;
-  return `<article class="therapist-card"><a href="${link}" aria-label="Профиль: ${escape(p.name)}">${portrait(p)}</a><div class="card-body"><p class="card-kicker"><span>Гештальт-терапевт</span><span>${escape(formatLabel(p))}</span></p><h3 class="card-name"><a href="${link}">${escape(p.name)}</a></h3><p class="card-description">${escape(p.summary)}</p><div class="tags">${(
+  return `<article class="therapist-card"><div class="card-photo">${portrait(p, "", true)}</div><div class="card-body"><p class="card-kicker"><span>Гештальт-терапевт</span><span>${escape(formatLabel(p))}</span></p><h3 class="card-name"><a class="card-link" href="${link}">${escape(p.name)}</a></h3><p class="card-description">${escape(p.summary)}</p><div class="tags">${(
     p.topics || []
   )
     .slice(0, 4)
     .map((t) => `<span class="tag">${escape(t)}</span>`)
     .join(
       "",
-    )}</div><div class="card-footer"><span>${escape(priceLabel(p))}${p.duration ? ` · ${escape(p.duration)} мин` : ""}</span><a class="text-link" href="${link}">Анкета и контакты</a></div></div></article>`;
+    )}</div><div class="card-footer"><span>${escape(priceLabel(p))}${p.duration ? ` · ${escape(p.duration)} мин` : ""}</span><span class="text-link" aria-hidden="true">Анкета и контакты</span></div></div></article>`;
 }
